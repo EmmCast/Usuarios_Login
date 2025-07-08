@@ -22,15 +22,14 @@ GitLab (repositorio)
 ⚙️ Instalación
 Clona el repositorio:
 
+	git clone https://gitlab.com/apis_rest/usuarios_login.git
+	cd usuarios_login
 
-git clone https://gitlab.com/apis_rest/usuarios_login.git
-cd usuarios_login
 Configura tu base de datos PostgreSQL y asegúrate de tener el archivo application.properties con los datos correctos.
 
 Compila y ejecuta la aplicación:
 
-
-./mvnw spring-boot:run
+	./mvnw spring-boot:run
 
 🧪 Endpoints principales
 
@@ -47,55 +46,53 @@ Roles
 
 📦 Estructura del proyecto
 
-com.proyect.System_userAndLogin
-│
-├── controller
-|
-│   ├── pruebas
-|
-├── Dto
-│   ├── ContrasenaDto
-│   ├── FotoUsuarioDto
-│   ├── PreguntaSeguridadDto
-│   ├── RolDto
-│   └── UsuarioDto
-├── model
-│   ├── Contrasena
-│   ├── FotoUsuario
-│   ├── PreguntaSeguridad
-│   ├── Rol
-│   └── Usuario
-├── repository
-│   ├── IContrasenaRepository
-│   ├── IFotoUsuarioRepository
-│   ├── IPreguntaSeguridadRepository
-│   ├── IRolRepository
-│   └── IUsuarioRepository
-├── Response
-│   ├── PreguntaSerguridadResponse
-│   ├   ├── PreguntaSeguridadResponse
-│   ├   ├── PreguntaSeguridadResponseRest
-│   ├── ResponseContrasena
-│   ├   └── ContrasenaResponse
-│   ├   ├── ContrasenaResponseRest
-│   ├── ResponseUsuario
-│   ├   ├── UsuarioResponse
-│   ├   ├── UsuarioResponseRest
-│   └── ResponseUsuario
-├── Services
-│   ├── IContrasenaRepositoryServices
-│   ├── IFotoUsuarioRepositoryServices
-│   ├── IPreguntaSeguridadRepositoryServices
-│   ├── IRolRepositoryServices
-│   └── IUsuarioServices
-├── ServicesImpl
-│   ├── ContrasenaRepositoryServicesImpl
-│   ├── FotoUsuarioRepositoryServicesImpl
-│   ├── PreguntaSeguridadRepositoryServicesImpl
-│   ├── RolRepositoryServicesImpl
-│   └── UsuarioServicesImpl
-├── utils
-│   └── util
+	com.proyect.System_userAndLogin
+	│
+	├── controller
+	│   ├── pruebas
+	├── Dto
+	│   ├── ContrasenaDto
+	│   ├── FotoUsuarioDto
+	│   ├── PreguntaSeguridadDto
+	│   ├── RolDto
+	│   └── UsuarioDto
+	├── model
+	│   ├── Contrasena
+	│   ├── FotoUsuario
+	│   ├── PreguntaSeguridad
+	│   ├── Rol
+	│   └── Usuario
+	├── repository
+	│   ├── IContrasenaRepository
+	│   ├── IFotoUsuarioRepository
+	│   ├── IPreguntaSeguridadRepository
+	│   ├── IRolRepository
+	│   └── IUsuarioRepository
+	├── Response
+	│   ├── PreguntaSerguridadResponse
+	│   ├   ├── PreguntaSeguridadResponse
+	│   ├   ├── PreguntaSeguridadResponseRest
+	│   ├── ResponseContrasena
+	│   ├   └── ContrasenaResponse	
+	│   ├   ├── ContrasenaResponseRest
+	│   ├── ResponseUsuario
+	│   ├   ├── UsuarioResponse
+	│   ├   ├── UsuarioResponseRest
+	│   └── ResponseUsuario
+	├── Services
+	│   ├── IContrasenaRepositoryServices
+	│   ├── IFotoUsuarioRepositoryServices
+	│   ├── IPreguntaSeguridadRepositoryServices
+	│   ├── IRolRepositoryServices
+	│   └── IUsuarioServices
+	├── ServicesImpl
+	│   ├── ContrasenaRepositoryServicesImpl
+	│   ├── FotoUsuarioRepositoryServicesImpl
+	│   ├── PreguntaSeguridadRepositoryServicesImpl
+	│   ├── RolRepositoryServicesImpl
+	│   └── UsuarioServicesImpl
+	├── utils
+	│   └── util
 
 📷 Visuales (opcional)
 Se agregara captura posteriormente
