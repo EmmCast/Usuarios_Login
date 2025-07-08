@@ -35,10 +35,14 @@ Compila y ejecuta la aplicación:
 🧪 Endpoints principales
 
 Roles
+
      Listar roles
+
 	GET http://localhost:8081/prueba/listarRol
+
      Buscar rol por ID
-	GET http://localhost:8081/prueba/roles/{id}
+	
+        GET http://localhost:8081/prueba/roles/{id}
 
 
 📦 Estructura del proyecto
@@ -46,7 +50,9 @@ Roles
 com.proyect.System_userAndLogin
 │
 ├── controller
+|
 │   ├── pruebas
+|
 ├── Dto
 │   ├── ContrasenaDto
 │   ├── FotoUsuarioDto
