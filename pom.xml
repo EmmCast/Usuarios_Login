@@ -68,6 +68,13 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.sistema_arrendatarios_backend</groupId>
+			<artifactId>Arrendatarios</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		
+		
 	</dependencies>
 
 	<build>
