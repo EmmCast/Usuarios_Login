@@ -35,7 +35,7 @@ Compila y ejecuta la aplicación:
 
     Roles
      Listar roles
-	GET http://localhost:8081/prueba/listarRol
+		GET http://localhost:8081/prueba/listarRol
      Buscar rol por ID
         GET http://localhost:8081/prueba/roles/{id}
 
