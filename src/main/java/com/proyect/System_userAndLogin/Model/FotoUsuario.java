@@ -30,20 +30,20 @@ public class FotoUsuario implements Serializable{
 	
 	private static final long serialVersionUID = 8564890825891991218L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_foto_usuario ")
-	private Long idfotoUsuario;
-	
-	@Lob
-	@Basic(fetch = FetchType.LAZY)
-	@Column(name = "foto_usuario ")
-	private byte[] fotoUsuario;
-	
-	@OneToOne
-	@JoinColumn(name = "usuario_id", nullable = false)
-	@JsonBackReference
-	private Usuario usuario;
-	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_foto_usuario")
+    private Long idFotoUsuario;
+
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "foto_usuario", nullable = false)
+    private byte[] fotoUsuario;
+
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    @JsonBackReference
+    private Usuario usuarioId;
+
 }
 

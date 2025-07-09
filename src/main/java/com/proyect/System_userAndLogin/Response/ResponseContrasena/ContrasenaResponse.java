@@ -2,7 +2,7 @@ package com.proyect.System_userAndLogin.Response.ResponseContrasena;
 
 import java.util.List;
 
-import com.proyect.System_userAndLogin.Model.Contrasena;
+import com.proyect.System_userAndLogin.Dto.ContrasenaDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,13 +15,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ContrasenaResponse {
 	
-	public List<Contrasena> contrasena;
+	public List<ContrasenaDto> contrasena;
 	
-	public List<Contrasena> gerContrasena(){
+	public List<ContrasenaDto> gerContrasena(){
 		return contrasena;
 	}
 	
-	public void setContrasena(List<Contrasena> contrasena) {
+	public void setContrasena(List<ContrasenaDto> contrasena) {
 		this.contrasena = contrasena;
 	}
 

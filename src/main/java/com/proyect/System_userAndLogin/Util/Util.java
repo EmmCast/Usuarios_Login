@@ -5,8 +5,24 @@ import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class Util {
+	
+
+    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // Encripta una contraseña
+    public static String encriptarContrasena(String plainPassword) {
+        return passwordEncoder.encode(plainPassword);
+    }
+
+    // Verifica si la contraseña en texto plano coincide con la encriptada
+    public static boolean verificarContrasena(String plainPassword, String hashedPassword) {
+        return passwordEncoder.matches(plainPassword, hashedPassword);
+    }
+    
+    
 	// compress the image bytes before storing it in the database
 		public static byte[] compressZLib(byte[] data) {
 			Deflater deflater = new Deflater();

@@ -26,19 +26,19 @@ public class PreguntaSeguridad  implements Serializable{
 	
 	private static final long serialVersionUID = 8564890825891991218L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_pregunta  ")
-	private Long idPregunta;
-	
-	@Column(name = "pregunta_hash")
-	private String pregunta;
-	
-	@Column(name = "respuesta_hash")
-	private String respuesta;
-	
-	@OneToOne
-	@JoinColumn(name = "usuario_id", nullable = false, unique = true)
-	private Usuario usuario;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_pregunta")
+    private Long idPregunta;
+
+    @Column(name = "pregunta_hash", nullable = false)
+    private String pregunta;
+
+    @Column(name = "respuesta_hash", nullable = false)
+    private String respuesta;
+
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    private Usuario usuarioId;
 
 }

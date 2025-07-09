@@ -26,16 +26,16 @@ public class Contrasena  implements Serializable{
 	
 	private static final long serialVersionUID = 8564890825891991218L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_contrasena")
-	private Long idcontrasena;
-	
-	@Column(name = "contrasena_hash")
-	private String contrasena;
-	
-	@OneToOne
-	@JoinColumn(name = "usuario_id", nullable = false, unique = true)
-	private Usuario usuario;	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_contrasena")
+    private Long idContrasena;
+
+    @Column(name = "contrasena_hash", nullable = false)
+    private String contrasena;
+
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    private Usuario usuarioId;
 
 }

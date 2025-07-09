@@ -17,6 +17,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,47 +34,54 @@ public class Usuario  implements Serializable{
 
 	private static final long serialVersionUID = -3774119125088387327L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_usuario")
-	private Long idUsuario;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_usuario")
+    private Long idUsuario;
 
-	@Column(name = "nombre_usuario")
-	private String nombreUsuario;
-	
-	@Column(name = "primer_nombre")
-	private String primerNombre;
-	
-	@Column(name = "segundo_nombre")
-	private String segundoNombre;
-	
-	@Column(name = "apellido_paterno")
-	private String apellidoPaterno;
-	
-	@Column(name = "apellido_materno")
-	private String apellidoMaterno;
-	
-	@Column(name = "email")
-	private String email;
-	
-	@Column(name = "telefono")
-	private String telefono;
-	
-	@Column(name = "fecha_ingreso")
-	private Date fefhaIngreso;
-	
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(
-	    name = "usuario_rol",
-	    joinColumns = @JoinColumn(name = "usuario_id"),
-	    inverseJoinColumns = @JoinColumn(name = "rol_id")
-	)
-	private Set<Rol> roles = new HashSet<>();
-	
-	@OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	private FotoUsuario fotoUsuarioId;
-	
-	@Column(name = "estado")
-	private Boolean estado;
+    @Column(name = "nombre_usuario", nullable = false, unique = true)
+    private String nombreUsuario;
+
+    @Column(name = "primer_nombre", nullable = false)
+    private String primerNombre;
+
+    @Column(name = "segundo_nombre", nullable = false)
+    private String segundoNombre;
+
+    @Column(name = "apellido_paterno", nullable = false)
+    private String apellidoPaterno;
+
+    @Column(name = "apellido_materno", nullable = false)
+    private String apellidoMaterno;
+
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "telefono", nullable = false, unique = true)
+    private String telefono;
+
+    @Column(name = "fecha_ingreso")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date fechaIngreso = new Date();
+
+    @Column(name = "estado", nullable = false)
+    private Boolean estado;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "usuario_rol",
+        joinColumns = @JoinColumn(name = "usuario_id"),
+        inverseJoinColumns = @JoinColumn(name = "rol_id")
+    )
+    private Set<Rol> roles = new HashSet<>();
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private FotoUsuario fotoUsuario;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Contrasena contrasena;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private PreguntaSeguridad preguntaSeguridad;
 
 }
