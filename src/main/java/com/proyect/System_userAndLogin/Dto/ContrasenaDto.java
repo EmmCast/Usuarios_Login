@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContrasenaDto {
-    private Long id;
+    private Long idContrasena;
     private Long idUsuario;
     private String contrasena;
 }

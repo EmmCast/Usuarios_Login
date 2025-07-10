@@ -13,12 +13,12 @@ public class Util {
     private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     // Encripta una contraseña
-    public static String encriptarContrasena(String plainPassword) {
+    public static String encriptarTexto(String plainPassword) {
         return passwordEncoder.encode(plainPassword);
     }
 
     // Verifica si la contraseña en texto plano coincide con la encriptada
-    public static boolean verificarContrasena(String plainPassword, String hashedPassword) {
+    public static boolean verificarTexto(String plainPassword, String hashedPassword) {
         return passwordEncoder.matches(plainPassword, hashedPassword);
     }
     

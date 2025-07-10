@@ -51,7 +51,7 @@ public class ContrasenaServicesImpl implements IContrasenaServices{
 		        }
 
 		        Contrasena contrasena = new Contrasena();
-		        String contrasenaHash = Util.encriptarContrasena(creaContrasena.getContrasena());
+		        String contrasenaHash = Util.encriptarTexto(creaContrasena.getContrasena());
 
 		        contrasena.getIdContrasena();
 		        contrasena.setContrasena(contrasenaHash);
@@ -61,8 +61,8 @@ public class ContrasenaServicesImpl implements IContrasenaServices{
 
 		        if (contrasenaGuardada.getIdContrasena() != null) {
 		            ContrasenaDto respuestaDto = new ContrasenaDto();
-		            respuestaDto.setId(contrasenaGuardada.getIdContrasena());
-		            respuestaDto.setIdUsuario(contrasenaGuardada.getUsuarioId().getIdUsuario());
+		            respuestaDto.setIdContrasena(contrasenaGuardada.getIdContrasena());
+		            respuestaDto .setIdUsuario(contrasenaGuardada.getUsuarioId().getIdUsuario());
 
 		            contrasenaList.add(respuestaDto);
 		            response.getContrasenaResponse().setContrasena(contrasenaList);
