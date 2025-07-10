@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import com.proyect.System_userAndLogin.Model.PreguntaSeguridad;
 
 @Repository
-public interface IPreguntaUsuario extends JpaRepository<PreguntaSeguridad, Long>{
+public interface IPreguntaSeguridadRepository extends JpaRepository<PreguntaSeguridad, Long>{
 
 }
