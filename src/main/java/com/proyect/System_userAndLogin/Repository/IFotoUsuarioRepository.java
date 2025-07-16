@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import com.proyect.System_userAndLogin.Model.FotoUsuario;
 
 @Repository
-public interface IFotoUsuario extends JpaRepository<FotoUsuario, Long>{
+public interface IFotoUsuarioRepository extends JpaRepository<FotoUsuario, Long>{
 
 	
 }
