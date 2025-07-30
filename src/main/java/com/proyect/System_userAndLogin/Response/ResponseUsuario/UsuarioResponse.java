@@ -2,7 +2,7 @@ package com.proyect.System_userAndLogin.Response.ResponseUsuario;
 
 import java.util.List;
 
-import com.proyect.System_userAndLogin.Model.Usuario;
+import com.proyect.System_userAndLogin.Dto.UsuarioDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,13 +15,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UsuarioResponse {
 
-	private List<Usuario> usuario;
+	private List<UsuarioDto> usuario;
 	
-	public List<Usuario> getUsuario(){
+	public List<UsuarioDto> getUsuario(){
 		return usuario;
 	}
 	
-	public void setUsuario(List<Usuario> usuario) {
+	public void setUsuario(List<UsuarioDto> usuario) {
 		this.usuario = usuario;
 	}
 	
