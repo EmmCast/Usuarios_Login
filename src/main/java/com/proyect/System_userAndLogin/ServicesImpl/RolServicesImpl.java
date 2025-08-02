@@ -37,12 +37,11 @@ public class RolServicesImpl implements IRolServices{
 
 
 	@Override
-	public RolDto buscarPorId(Long id) {
+	public Rol buscarPorId(Long id) {
 	    logger.info("Buscando rol por id: {}", id);
-
 	    Rol rol = rolRepository.findById(id)
 	            .orElseThrow(() -> new EntityNotFoundException("Rol no encontrado con id: " + id));
-
-	    return new RolDto(rol.getIdRol(), rol.getRol());
+	    return rol;
 	}
+	
 }

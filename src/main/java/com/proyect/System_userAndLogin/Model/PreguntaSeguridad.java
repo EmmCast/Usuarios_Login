@@ -39,6 +39,6 @@ public class PreguntaSeguridad  implements Serializable{
 
     @OneToOne
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
-    private Usuario usuarioId;
+    private Usuario usuario;
 
 }

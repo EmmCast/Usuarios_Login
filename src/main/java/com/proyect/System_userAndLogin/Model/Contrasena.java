@@ -33,9 +33,14 @@ public class Contrasena  implements Serializable{
 
     @Column(name = "contrasena_hash", nullable = false)
     private String contrasena;
-
+/*
     @OneToOne
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
-    private Usuario usuarioId;
-
+    private Usuario usuario;
+*/
+    
+    @OneToOne
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    private Usuario usuario;
+    
 }

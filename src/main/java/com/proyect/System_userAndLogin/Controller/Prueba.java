@@ -34,7 +34,7 @@ public class Prueba {
 	@GetMapping("/roles/{id}")
 	public ResponseEntity<?> buscarRolPorId(@PathVariable Long id) {
 	    try {
-	        RolDto rolDto = rolServices.buscarPorId(id);
+	        Rol rolDto = rolServices.buscarPorId(id);
 	        return ResponseEntity.ok(rolDto);
 	    } catch (EntityNotFoundException e) {
 	        Map<String, Object> response = new HashMap<>();

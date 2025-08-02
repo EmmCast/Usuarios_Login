@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.proyect.System_userAndLogin.Dto.RolDto;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -75,14 +74,19 @@ public class Usuario  implements Serializable{
         joinColumns = @JoinColumn(name = "usuario_id"),
         inverseJoinColumns = @JoinColumn(name = "rol_id")
     )
-    private Set<RolDto> roles = new HashSet<>();
+    private Set<Rol> roles = new HashSet<>();
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private FotoUsuario fotoUsuario;
-
+/*
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Contrasena contrasena;
-
+*/
+    
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Contrasena contrasena;
+    
+    
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PreguntaSeguridad preguntaSeguridad;
 

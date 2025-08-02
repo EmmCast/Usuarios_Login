@@ -55,14 +55,14 @@ public class ContrasenaServicesImpl implements IContrasenaServices{
 
 		        contrasena.getIdContrasena();
 		        contrasena.setContrasena(contrasenaHash);
-		        contrasena.setUsuarioId(usuarioExist.get());
+		        contrasena.setUsuario(usuarioExist.get());
 
 		        Contrasena contrasenaGuardada = contrasenaRepository.save(contrasena);
 
 		        if (contrasenaGuardada.getIdContrasena() != null) {
 		            ContrasenaDto respuestaDto = new ContrasenaDto();
 		            respuestaDto.setIdContrasena(contrasenaGuardada.getIdContrasena());
-		            respuestaDto .setIdUsuario(contrasenaGuardada.getUsuarioId().getIdUsuario());
+		            respuestaDto .setIdUsuario(contrasenaGuardada.getUsuario().getIdUsuario());
 
 		            contrasenaList.add(respuestaDto);
 		            response.getContrasenaResponse().setContrasena(contrasenaList);

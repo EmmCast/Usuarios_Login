@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import com.proyect.System_userAndLogin.Dto.PreguntaSeguridadDto;
 import com.proyect.System_userAndLogin.Model.PreguntaSeguridad;
 import com.proyect.System_userAndLogin.Model.Usuario;
-import com.proyect.System_userAndLogin.Repository.IContrasenaReposiroty;
 import com.proyect.System_userAndLogin.Repository.IPreguntaSeguridadRepository;
 import com.proyect.System_userAndLogin.Repository.IUsuarioRepocitory;
 import com.proyect.System_userAndLogin.Response.ResponseRest;
@@ -62,7 +61,7 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
 
             pregunta.setPregunta(preguntaTexto);
             pregunta.setRespuesta(respuestaHash);
-            pregunta.setUsuarioId(usuarioExist.get());
+            pregunta.setUsuario(usuarioExist.get());
 
             PreguntaSeguridad guardada = preguntaSeguridadRepository.save(pregunta);
 
@@ -71,7 +70,7 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
                 dto.setIdPregunta(guardada.getIdPregunta());
                 dto.setPregunta(guardada.getPregunta());
                 dto.setRespuesta(guardada.getRespuesta());
-                dto.setUsuarioId(guardada.getUsuarioId().getIdUsuario());
+                dto.setUsuarioId(guardada.getUsuario().getIdUsuario());
 
                 listaDto.add(dto);
                 response.getPreguntaSeguridadResponse().setPreguntaSeguridad(listaDto);
@@ -106,8 +105,8 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
             PreguntaSeguridadDto dto = new PreguntaSeguridadDto();
 
             dto.setIdPregunta(pregunta.getIdPregunta());
-            dto.setPregunta(pregunta.getPregunta()); // solo la pregunta
-            dto.setUsuarioId(pregunta.getUsuarioId().getIdUsuario());
+            dto.setPregunta(pregunta.getPregunta());
+            dto.setUsuarioId(pregunta.getUsuario().getIdUsuario());
 
             lista.add(dto);
             response.getPreguntaSeguridadResponse().setPreguntaSeguridad(lista);

@@ -42,8 +42,6 @@ public class FotoUsuario implements Serializable{
 
     @OneToOne
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
-    @JsonBackReference
-    private Usuario usuarioId;
-
+    private Usuario usuario;
 }
 

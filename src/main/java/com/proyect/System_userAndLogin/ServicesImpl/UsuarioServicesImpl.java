@@ -10,17 +10,16 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.proyect.System_userAndLogin.Dto.ContrasenaDto;
-import com.proyect.System_userAndLogin.Dto.RolDto;
 import com.proyect.System_userAndLogin.Dto.UsuarioDto;
-import com.proyect.System_userAndLogin.Model.Contrasena;
 import com.proyect.System_userAndLogin.Model.FotoUsuario;
+import com.proyect.System_userAndLogin.Model.Rol;
 import com.proyect.System_userAndLogin.Model.Usuario;
-import com.proyect.System_userAndLogin.Repository.IContrasenaReposiroty;
 import com.proyect.System_userAndLogin.Repository.IUsuarioRepocitory;
 import com.proyect.System_userAndLogin.Response.ResponseUsuario.UsuarioResponseRest;
 import com.proyect.System_userAndLogin.Services.IContrasenaServices;
@@ -28,31 +27,42 @@ import com.proyect.System_userAndLogin.Services.IFotoUsuarioServices;
 import com.proyect.System_userAndLogin.Services.IRolServices;
 import com.proyect.System_userAndLogin.Services.IUsuarioServices;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class UsuarioServicesImpl implements IUsuarioServices{
 
 	private static final Logger logger = LoggerFactory.getLogger(UsuarioServicesImpl.class);
 	
-	@Autowired
-	private IUsuarioRepocitory usuarioRepository;
+	private final IUsuarioRepocitory usuarioRepository;
 	
-	@Autowired
-	private IRolServices rolServices;
+	private final IRolServices rolServices;
 	
-	@Autowired
-	private IContrasenaServices contrasenaServices;
+	private final IContrasenaServices contrasenaServices;
 	
+	private final IFotoUsuarioServices fotoUsuarioServices;
+/*	
 	@Autowired
-	private IFotoUsuarioServices fotoUsuarioServices;
-	
 	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,IRolServices rolServices,
-			IContrasenaServices contrasenaServices,IFotoUsuarioServices fotoUsuarioServices) {
+			IContrasenaServices contrasenaServices, @Lazy IFotoUsuarioServices fotoUsuarioServices) {
 		this.usuarioRepository = usuarioRepository;
 		this.rolServices = rolServices;
 		this.contrasenaServices = contrasenaServices;
 		this.fotoUsuarioServices = fotoUsuarioServices;
 	}
-
+*/
+	@Autowired
+	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,
+	                            IRolServices rolServices,
+	                            IContrasenaServices contrasenaServices,
+	                            @Lazy IFotoUsuarioServices fotoUsuarioServices) {
+	    this.usuarioRepository = usuarioRepository;
+	    this.rolServices = rolServices;
+	    this.contrasenaServices = contrasenaServices;
+	    this.fotoUsuarioServices = fotoUsuarioServices;
+	}
+	
+	
 	private UsuarioDto mapperUsuarioDto(Usuario usuario) {
 		UsuarioDto dto = new UsuarioDto();
 		dto.setPrimerNombre(usuario.getPrimerNombre());
@@ -66,7 +76,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		if (usuario.getFotoUsuario() != null) {
 		    dto.setFotoUsuario(usuario.getFotoUsuario().getFotoUsuario());
 		}
-        Set<RolDto> roles = dto.getRolesIds().stream()
+        Set<Rol> roles = dto.getRolesIds().stream()
 	            .map(rolServices::buscarPorId)
 	            .filter(Objects::nonNull)
 	            .collect(Collectors.toSet());
@@ -77,6 +87,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	}
 	
 	@Override
+	@Transactional
 	public ResponseEntity<UsuarioResponseRest> guardarUsuario(UsuarioDto dto) {
 		  UsuarioResponseRest response = new UsuarioResponseRest();
 		    List<UsuarioDto> lista = new ArrayList<>();
@@ -90,9 +101,11 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        usuario.setEmail(dto.getEmail());
 		        usuario.setTelefono(dto.getTelefono());
 		        usuario.setFechaIngreso(dto.getFechaIngreso());
+		        usuario.setNombreUsuario(dto.getPrimerNombre().concat(dto.getApellidoMaterno()));
+		        usuario.setEstado(true);
 
 		        // Asignar roles desde ids
-		        Set<RolDto> roles = dto.getRolesIds().stream()
+		        Set<Rol> roles = dto.getRolesIds().stream()
 			            .map(rolServices::buscarPorId)
 			            .filter(Objects::nonNull)
 			            .collect(Collectors.toSet());
@@ -236,7 +249,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	        usuario.setEmail(dto.getEmail());
 	        usuario.setTelefono(dto.getTelefono());
 
-	        Set<RolDto> roles = dto.getRolesIds().stream()
+	        Set<Rol> roles = dto.getRolesIds().stream()
 		            .map(rolServices::buscarPorId)
 		            .filter(Objects::nonNull)
 		            .collect(Collectors.toSet());
