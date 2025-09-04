@@ -3,6 +3,7 @@ package com.proyect.System_userAndLogin.Dto;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -49,6 +50,6 @@ public class UsuarioDto implements Serializable{
 	
 	private Date fechaIngreso;
 	
-	private Set<Long> rolesIds;
+	private Set<Long> rolesIds = new HashSet<>();
 	
 }

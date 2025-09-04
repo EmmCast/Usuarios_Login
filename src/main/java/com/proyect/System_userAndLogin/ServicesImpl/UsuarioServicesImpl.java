@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,8 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	private final IContrasenaServices contrasenaServices;
 	
 	private final IFotoUsuarioServices fotoUsuarioServices;
+	
+	private final userNameServicesImpl userNameServ;
 /*	
 	@Autowired
 	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,IRolServices rolServices,
@@ -53,10 +56,12 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 */
 	@Autowired
 	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,
+								userNameServicesImpl userNameServ,
 	                            IRolServices rolServices,
 	                            IContrasenaServices contrasenaServices,
 	                            @Lazy IFotoUsuarioServices fotoUsuarioServices) {
 	    this.usuarioRepository = usuarioRepository;
+	    this.userNameServ = userNameServ;
 	    this.rolServices = rolServices;
 	    this.contrasenaServices = contrasenaServices;
 	    this.fotoUsuarioServices = fotoUsuarioServices;
@@ -76,14 +81,39 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		if (usuario.getFotoUsuario() != null) {
 		    dto.setFotoUsuario(usuario.getFotoUsuario().getFotoUsuario());
 		}
-        Set<Rol> roles = dto.getRolesIds().stream()
+/*
+		Set<Rol> roles = dto.getRolesIds().stream()
 	            .map(rolServices::buscarPorId)
 	            .filter(Objects::nonNull)
 	            .collect(Collectors.toSet());
 
 	        usuario.setRoles(roles);
-			
+	*/
+	    Set<Long> rolesIds = (usuario.getRoles() == null) ? java.util.Set.of()
+	            : usuario.getRoles().stream().map(Rol::getIdRol).collect(java.util.stream.Collectors.toSet());
+	    dto.setRolesIds(rolesIds);
+	/*    
+	    Set<String> rolesNombres = (usuario.getRoles()==null)? Set.of()
+	    	    : usuario.getRoles().stream().map(Rol::getRol).collect(Collectors.toSet());
+	    	dto.setRoles(rolesNombres);
+	  */  
 		return dto;
+	}
+	
+	@Transactional
+	public Usuario crearUsuario(Usuario nuevo) {
+	    int reintentos = 0;
+	    while (true) {
+	        try {
+	            String username = userNameServ.generarUsuario(nuevo.getPrimerNombre(),nuevo.getApellidoPaterno());
+	            nuevo.setNombreUsuario(username);
+	            return usuarioRepository.save(nuevo);
+	        } catch (DataIntegrityViolationException ex) {
+	            // 23505 = unique_violation en PostgreSQL
+	            if (++reintentos > 5) throw ex;
+	            // recalcula y reintenta con otro sufijo
+	        }
+	    }
 	}
 	
 	@Override
@@ -101,7 +131,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        usuario.setEmail(dto.getEmail());
 		        usuario.setTelefono(dto.getTelefono());
 		        usuario.setFechaIngreso(dto.getFechaIngreso());
-		        usuario.setNombreUsuario(dto.getPrimerNombre().concat(dto.getApellidoMaterno()));
+//		        usuario.setNombreUsuario(dto.getPrimerNombre().concat(dto.getApellidoMaterno()));
 		        usuario.setEstado(true);
 
 		        // Asignar roles desde ids
@@ -112,6 +142,29 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 		        usuario.setRoles(roles);
 
+		        int reintentos = 0;
+	            Usuario usuarioGuardadoU = null;
+	            while (true) {
+	                try {
+	                    String username =  userNameServ.generarUsuario(
+	                            dto.getPrimerNombre(), dto.getApellidoPaterno());
+	                    usuario.setNombreUsuario(username);
+	                    usuarioGuardadoU = usuarioRepository.saveAndFlush(usuario); 
+	                    break;
+	                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+	                    Throwable root = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(ex);
+	                    String msg = root != null ? root.getMessage() : ex.getMessage();
+	                    if (msg != null && msg.toLowerCase().contains("nombre_usuario")) {
+	                        if (++reintentos <= 5) {
+	                            logger.warn("Choque de username, reintentando (intento {})", reintentos);
+	                            continue;
+	                        }
+	                    }
+	                    response.setMetdata("Conflicto", "409", "Datos duplicados: " + msg);
+	                    return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+	                }
+	            }
+		        
 		        Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
 		        ContrasenaDto contrasena = new ContrasenaDto();

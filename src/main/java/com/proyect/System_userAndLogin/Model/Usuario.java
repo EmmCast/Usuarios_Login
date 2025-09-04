@@ -20,13 +20,16 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "Usuarios")
+@Table(name = "Usuarios", uniqueConstraints = {
+	    @UniqueConstraint(columnNames = { "primer_nombre", "segundo_nombre", "apellido_paterno", "apellido_materno" })
+	})
 @Setter
 @Getter
 @NoArgsConstructor
@@ -65,6 +68,10 @@ public class Usuario  implements Serializable{
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaIngreso = new Date();
 
+    @Column(name = "updated_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updated_at;
+    
     @Column(name = "estado", nullable = false)
     private Boolean estado;
 
