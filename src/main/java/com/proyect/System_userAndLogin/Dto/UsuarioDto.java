@@ -50,6 +50,7 @@ public class UsuarioDto implements Serializable{
 	
 	private Date fechaIngreso;
 	
+	@NotBlank(message = "El Rol es obligatorio")
 	private Set<Long> rolesIds = new HashSet<>();
 	
 }

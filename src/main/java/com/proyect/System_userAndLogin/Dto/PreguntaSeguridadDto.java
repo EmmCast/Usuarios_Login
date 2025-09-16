@@ -15,7 +15,6 @@ public class PreguntaSeguridadDto  implements Serializable{
 	
 	private static final long serialVersionUID = 8564890825891991218L;
 
-	  	private Long idPregunta;
 	    private String pregunta;
 	    private String respuesta;
 	    private Long usuarioId;
