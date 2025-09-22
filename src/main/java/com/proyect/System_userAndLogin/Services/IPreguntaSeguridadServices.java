@@ -14,4 +14,6 @@ public interface IPreguntaSeguridadServices {
     
     ResponseRest validarRespuestaSeguridad(Long idUsuario, String respuesta);
     
+    ResponseEntity<PreguntaSeguridadResponseRest> cambiarPregunta(Long idUsuario, PreguntaSeguridadDto actualizarPregunta);
+    
 }

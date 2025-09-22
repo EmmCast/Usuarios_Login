@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "PreguntasDSeguridad")
+@Table(name = "preguntas_seguridad")
 @Setter
 @Getter
 @NoArgsConstructor
@@ -31,7 +31,7 @@ public class PreguntaSeguridad  implements Serializable{
     @Column(name = "id_pregunta")
     private Long idPregunta;
 
-    @Column(name = "pregunta_hash", nullable = false)
+    @Column(name = "pregunta", nullable = false)
     private String pregunta;
 
     @Column(name = "respuesta_hash", nullable = false)

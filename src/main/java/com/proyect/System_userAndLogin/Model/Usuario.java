@@ -70,7 +70,7 @@ public class Usuario  implements Serializable{
 
     @Column(name = "updated_at")
     @Temporal(TemporalType.TIMESTAMP)
-    private Date updated_at;
+    private Date updated_at= new Date();
     
     @Column(name = "estado", nullable = false)
     private Boolean estado;

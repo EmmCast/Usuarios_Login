@@ -54,7 +54,8 @@ public class FotoUsuarioServicesImpl implements IFotoUsuarioServices{
 			        Usuario usuario = new Usuario();
 			        usuario.setIdUsuario(idUsuario);
 			        nuevaFoto.setUsuario(usuario);
-			        nuevaFoto.setFotoUsuario(imagen);
+			        nuevaFoto.setBytes(imagen);
+			        nuevaFoto.getCreado();
 
 			        return fotoUsuarioRepository.save(nuevaFoto);
 			    } catch (Exception e) {
@@ -70,7 +71,7 @@ public class FotoUsuarioServicesImpl implements IFotoUsuarioServices{
 
 	            if (fotoExistente.isPresent()) {
 	                FotoUsuario foto = fotoExistente.get();
-	                foto.setFotoUsuario(imagen);
+	                foto.setBytes(imagen);
 	                return fotoUsuarioRepository.save(foto);
 	            } else {
 	                // Si no existe, se guarda como nueva

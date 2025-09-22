@@ -79,7 +79,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		dto.setFechaIngreso(usuario.getFechaIngreso());
 		
 		if (usuario.getFotoUsuario() != null) {
-		    dto.setFotoUsuario(usuario.getFotoUsuario().getFotoUsuario());
+		    dto.setFotoUsuario(usuario.getFotoUsuario().getBytes());
 		}
 /*
 		Set<Rol> roles = dto.getRolesIds().stream()
@@ -109,9 +109,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	            nuevo.setNombreUsuario(username);
 	            return usuarioRepository.save(nuevo);
 	        } catch (DataIntegrityViolationException ex) {
-	            // 23505 = unique_violation en PostgreSQL
 	            if (++reintentos > 5) throw ex;
-	            // recalcula y reintenta con otro sufijo
 	        }
 	    }
 	}
@@ -130,7 +128,8 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        usuario.setApellidoMaterno(dto.getApellidoMaterno());
 		        usuario.setEmail(dto.getEmail());
 		        usuario.setTelefono(dto.getTelefono());
-		        usuario.setFechaIngreso(dto.getFechaIngreso());
+		        usuario.getFechaIngreso();
+		        usuario.getUpdated_at();
 //		        usuario.setNombreUsuario(dto.getPrimerNombre().concat(dto.getApellidoMaterno()));
 		        usuario.setEstado(true);
 
@@ -175,7 +174,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        contrasenaServices.crearContrasena(contrasena);
 		        
 		        if (dto.getFotoUsuario() != null) {
-		        	fotoUsuarioServices.actualizarFoto(usuarioGuardado.getIdUsuario(), dto.getFotoUsuario());
+		        	fotoUsuarioServices.guardarFoto(usuarioGuardado.getIdUsuario(), dto.getFotoUsuario());
 		        }
 
 		        UsuarioDto dtoFinal = mapperUsuarioDto(usuarioGuardado);
@@ -210,7 +209,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		
 		FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(idUsuario);
 		if( foto != null) {
-			dto.setFotoUsuario(foto.getFotoUsuario());
+			dto.setFotoUsuario(foto.getBytes());
 		}
 		
 		lista.add(dto);
@@ -237,7 +236,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 				UsuarioDto dto = mapperUsuarioDto(usuario);
 				FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
 				if(foto != null) {
-					dto.setFotoUsuario(foto.getFotoUsuario());
+					dto.setFotoUsuario(foto.getBytes());
 				}
 				lista.add(dto);
 			}

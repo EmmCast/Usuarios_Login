@@ -13,16 +13,19 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.proyect.System_userAndLogin.Dto.PreguntaSeguridadDto;
 import com.proyect.System_userAndLogin.Dto.RolDto;
 import com.proyect.System_userAndLogin.Model.Rol;
+import com.proyect.System_userAndLogin.Response.ResponseRest;
 import com.proyect.System_userAndLogin.Response.PreguntaSeguridadResponse.PreguntaSeguridadResponseRest;
 import com.proyect.System_userAndLogin.Services.IPreguntaSeguridadServices;
 import com.proyect.System_userAndLogin.Services.IRolServices;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.websocket.server.PathParam;
 
 @RestController
 @RequestMapping("/prueba")
@@ -61,4 +64,16 @@ public class Prueba {
 
 		return preguntaServ.crearPregunta(pregunta);
 	}
+	
+	@PostMapping("/verificarPregunta/{idUsuario}")
+	public ResponseRest verificarPregunta(@PathVariable("idUsuario")Long idUsuario, @RequestParam("Respuesta") String Respuesta){
+		return preguntaServ.validarRespuestaSeguridad(idUsuario, Respuesta);
+	}
+	
+	@GetMapping("/obtenerPreguntaporIdUsuario/{idUsuario}")
+	public PreguntaSeguridadResponseRest obtenerpreguntaPorIdUsuario(@PathVariable("idUsuario") Long idUsuario){
+		return preguntaServ.obtenerPorUsuarioId(idUsuario);
+	}
+	
+
 }

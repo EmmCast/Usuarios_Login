@@ -1,8 +1,8 @@
 package com.proyect.System_userAndLogin.Model;
 
 import java.io.Serializable;
+import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -15,13 +15,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "FotosDUsuarios")
+@Table(name = "fotos_usuarios")
 @Setter
 @Getter
 @NoArgsConstructor
@@ -34,11 +36,23 @@ public class FotoUsuario implements Serializable{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_foto_usuario")
     private Long idFotoUsuario;
-
+    
+/* 
+    @Column(name = "mime")
+    private String mime;
+*/
+    @Column(name = "creado_en")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date creado= new Date();
+ /*   
     @Lob
     @Basic(fetch = FetchType.LAZY)
-    @Column(name = "foto_usuario", nullable = false)
-    private byte[] fotoUsuario;
+    @Column(name = "bytes", nullable = false)
+    private byte[] bytes;
+   */
+    
+    @Column(name = "bytes", nullable = false, columnDefinition = "bytea")
+    private byte[] bytes;
 
     @OneToOne
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)

@@ -44,147 +44,6 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
         this.preguntaSeguridadRepository = preguntaSeguridadRepository;
         this.usuarioRepository = usuarioRepository;
     }
-  /*  
-    @Transactional
-    @Override
-    public ResponseEntity<PreguntaSeguridadResponseRest> crearPregunta(PreguntaSeguridadDto preguntaSeguridad) {
-    	PreguntaSeguridadResponseRest response = new PreguntaSeguridadResponseRest();
-    	List<PreguntaSeguridadDto> listDto = new ArrayList<>();
-    	
-    	try {
-    		Optional<Usuario> usuarioExist = usuarioRepository.findById(preguntaSeguridad.getUsuarioId());
-    		if(usuarioExist.isEmpty()) {
-    			response.setMetdata("No encontrado", "-1", "Usuario con ID: " + preguntaSeguridad.getUsuarioId() + " no encontrado");
-    			return new ResponseEntity<> (response, HttpStatus.NOT_FOUND);
-    		}
-    		
-    		Long usuarioId = usuarioExist.get().getIdUsuario();
-    		boolean yaExiste = preguntaSeguridadRepository.existsByUsuarioId(usuarioId);
-    		if(yaExiste) {
-    			response.setMetdata("Conflicto", "-1",
-                        "El usuario ya tiene una pregunta de seguridad registrada");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-            }
-    		
-    	}catch (Exception e) {
-
-		}
-    	
-    	return null;
-    }
-
-    
-/*
-    @Transactional
-    @Override
-    public ResponseEntity<PreguntaSeguridadResponseRest> crearPregunta(PreguntaSeguridadDto preguntaSeguridad) {
-        PreguntaSeguridadResponseRest response = new PreguntaSeguridadResponseRest();
-        List<PreguntaSeguridadDto> listaDto = new ArrayList<>();
-
-        try {
-            Optional<Usuario> usuarioExist = usuarioRepository.findById(preguntaSeguridad.getUsuarioId());
-
-            if (!usuarioExist.isPresent()) {
-                response.setMetdata("Respuesta NO OK", "-1", "Usuario con ID " + preguntaSeguridad.getUsuarioId() + " no encontrado");
-                return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
-            }
-
-            PreguntaSeguridad pregunta = new PreguntaSeguridad();
-            String preguntaTexto = preguntaSeguridad.getPregunta(); // Puede quedar sin encriptar
-            String respuestaHash = Util.encriptarTexto(preguntaSeguridad.getRespuesta());
-
-            pregunta.setPregunta(preguntaTexto);
-            pregunta.setRespuesta(respuestaHash);
-            pregunta.setUsuario(usuarioExist.get());
-
-            PreguntaSeguridad guardada = preguntaSeguridadRepository.save(pregunta);
-
-            if (guardada.getIdPregunta() != null) {
-                PreguntaSeguridadDto dto = new PreguntaSeguridadDto();
-             //   dto.setIdPregunta(guardada.getIdPregunta());
-                dto.setPregunta(guardada.getPregunta());
-                dto.setRespuesta(guardada.getRespuesta());
-                dto.setUsuarioId(guardada.getUsuario().getIdUsuario());
-
-                listaDto.add(dto);
-                response.getPreguntaSeguridadResponse().setPreguntaSeguridad(listaDto);
-                response.setMetdata("Respuesta OK", "1", "Pregunta de seguridad guardada");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            } else {
-                response.setMetdata("Respuesta NO OK", "-1", "Pregunta de seguridad no guardada");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-
-        } catch (Exception e) {
-            logger.error("Error al guardar la pregunta de seguridad", e);
-            response.setMetdata("Respuesta NO OK", "-1", "Error interno al guardar la pregunta");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-	*/
-    
-    /*
-    @Transactional
-    @Override
-    public ResponseEntity<PreguntaSeguridadResponseRest> crearPregunta(@Valid PreguntaSeguridadDto dtoIn) {
-        PreguntaSeguridadResponseRest response = new PreguntaSeguridadResponseRest();
-
-        try {
-            // 1) Existe el usuario?
-            Usuario usuario = usuarioRepository.findById(dtoIn.getUsuarioId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Usuario con ID " + dtoIn.getUsuarioId() + " no encontrado"));
-
-            // 2) ¿Ya tiene pregunta? (modelo 1:1)
-            boolean yaExiste = preguntaSeguridadRepository.existsByUsuarioId(usuario.getIdUsuario());
-            if (yaExiste) {
-                response.setMetdata("Conflicto", "-1", "El usuario ya tiene una pregunta de seguridad");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-            }
-
-            // 3) Normalizar y hashear respuesta
-            String preguntaTexto = normalizarPregunta(dtoIn.getPregunta()); // si decides normalizar/limpiar
-            String respuestaNormalizada = normalizarRespuesta(dtoIn.getRespuesta()); // trim, toLowerCase, NFKC
-            String respuestaHash = Util.encriptarTexto(respuestaNormalizada); // BCrypt/Argon2id
-
-            // 4) Persistir
-            PreguntaSeguridad entidad = new PreguntaSeguridad();
-            entidad.setPregunta(preguntaTexto);        // puedes guardar texto claro o id de catálogo
-            entidad.setRespuesta(respuestaHash);   // nombre consistente
-            entidad.setUsuario(usuario);
-
-            PreguntaSeguridad guardada = preguntaSeguridadRepository.save(entidad);
-
-            // 5) Construir DTO de salida (SIN hash)
-            PreguntaSeguridadDto dtoOut = new PreguntaSeguridadDto();
-//            dtoOut.setIdPregunta(guardada.getIdPregunta());
-            dtoOut.setPregunta(guardada.getPregunta());
-            dtoOut.setRespuesta(null); // nunca devolver
-//            dtoOut.setUsuarioId(usuario.getIdUsuario());
-
-            response.getPreguntaSeguridadResponse().setPreguntaSeguridad(List.of(dtoOut));
-            response.setMetdata("Creado", "1", "Pregunta de seguridad guardada");
-
-            return ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(response);
-
-        } catch (EntityNotFoundException ex) {
-            response.setMetdata("No encontrado", "-1", ex.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-
-        } catch (DataIntegrityViolationException ex) {
-            // Por si el UNIQUE salta en BD
-            response.setMetdata("Conflicto", "-1", "Ya existe una pregunta de seguridad para este usuario");
-            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-
-        } catch (Exception e) {
-            logger.error("Error al guardar la pregunta de seguridad", e);
-            response.setMetdata("Error", "-1", "Error interno al guardar la pregunta");
-            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-*/
     
     @Transactional
     @Override
@@ -248,8 +107,6 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-   
-    
     
     @Override
     public PreguntaSeguridadResponseRest obtenerPorUsuarioId(Long idUsuario) {
@@ -267,9 +124,10 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
             PreguntaSeguridad pregunta = preguntaOpt.get();
             PreguntaSeguridadDto dto = new PreguntaSeguridadDto();
 
-          //  dto.setIdPregunta(pregunta.getIdPregunta());
+           // dto.setIdPregunta(pregunta.getIdPregunta());
             dto.setPregunta(pregunta.getPregunta());
             dto.setUsuarioId(pregunta.getUsuario().getIdUsuario());
+ //           dto.setRespuesta(pregunta.getRespuesta());
 
             lista.add(dto);
             response.getPreguntaSeguridadResponse().setPreguntaSeguridad(lista);
@@ -312,6 +170,13 @@ public class PreguntaSeguridadServicesImpl implements IPreguntaSeguridadServices
             return response;
         }
     }
+
+	@Override
+	public ResponseEntity<PreguntaSeguridadResponseRest> cambiarPregunta(Long idUsuario,
+			PreguntaSeguridadDto actualizarPregunta) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 
 }
