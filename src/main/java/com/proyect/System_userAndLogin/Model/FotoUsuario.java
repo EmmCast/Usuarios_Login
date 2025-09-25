@@ -37,10 +37,10 @@ public class FotoUsuario implements Serializable{
     @Column(name = "id_foto_usuario")
     private Long idFotoUsuario;
     
-/* 
-    @Column(name = "mime")
-    private String mime;
-*/
+ 
+    @Column(name = "nombre")
+    private String nombre;
+
     @Column(name = "creado_en")
     @Temporal(TemporalType.TIMESTAMP)
     private Date creado= new Date();
@@ -51,8 +51,8 @@ public class FotoUsuario implements Serializable{
     private byte[] bytes;
    */
     
-    @Column(name = "bytes", nullable = false, columnDefinition = "bytea")
-    private byte[] bytes;
+    @Column(name = "foto", nullable = false, columnDefinition = "bytea")
+    private byte[] foto;
 
     @OneToOne
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)

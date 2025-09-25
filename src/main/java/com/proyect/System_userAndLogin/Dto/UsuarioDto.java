@@ -24,6 +24,8 @@ public class UsuarioDto implements Serializable{
 	
 	private static final long serialVersionUID = -7970922455652136120L;
 
+	private Long idUsuario;
+	
 	@NotBlank(message = "El nombre es obligatorio")
     @Size(max = 50, message = "El nombre no puede exceder los 30 caracteres")
 	private String primerNombre;
@@ -45,6 +47,8 @@ public class UsuarioDto implements Serializable{
 	@NotBlank(message = "El Telefono es obligatorio")
     @Size(max = 10, message = "El Telefono no puede exceder los 10 caracteres")
 	private String telefono;
+	
+	private String nombreUsuario;
 	
 	private byte[] fotoUsuario;   
 	

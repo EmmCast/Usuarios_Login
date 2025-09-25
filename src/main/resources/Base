@@ -1,0 +1,217 @@
+-- =========================================================
+-- PROYECTO: Clinica / Veteromaria
+-- DB: PosgrestSQL
+-- OBJETIVO: Crear esquema completo con funciones/triggers y datos de prueba
+-- =========================================================
+
+-- =========================================================
+-- 0.- Extencion / Secion
+-- =========================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto; -- gen_random_uuid(), PGP cifrado
+CREATE EXTENSION IF NOT EXISTS citext; -- texto case-insensitive
+CREATE EXTENSION IF NOT EXISTS btree_gist; -- para Exclude con (&&) en rangos 
+
+--Llave de cifrado para esta sesion (DEMO). en prod: ALTER ROLE/DATABASE/SYSTEM
+SELECT set_config('app.cryptokey','clave_super_secreta_123',true);
+
+-- =========================
+-- 1. LIMPIEZA (opcional)
+-- =========================
+-- Habilita si quieres reconstruir limpio:
+-- DROP VIEW IF EXISTS vw_expediente_conteo, vw_stock_disponible, vw_citas_detalle, vw_mascotas_con_dueno;
+-- DROP TABLE IF EXISTS reservas_stock, stock_por_lote, lotes, fotos_medicamentos, medicamentos, sucursales CASCADE;
+-- DROP TABLE IF EXISTS adjuntos, entradas_expediente, expedientes CASCADE;
+-- DROP TABLE IF EXISTS cliente_stats, citas CASCADE;
+-- DROP TABLE IF EXISTS fotos_mascotas, fotos_usuarios CASCADE;
+-- DROP TABLE IF EXISTS historial_dueno_mascota, mascotas, razas, especies CASCADE;
+-- DROP TABLE IF EXISTS preguntas_seguridad, contrasenas CASCADE;
+-- DROP TABLE IF EXISTS veterinarios CASCADE;
+-- DROP TABLE IF EXISTS usuario_rol, audit_log, usuarios, roles CASCADE;
+
+-- =========================
+-- 2. TABLAS BASE
+-- =========================
+
+-- 2.1 Roles
+CREATE TABLE IF NOT EXISTS roles (
+	id_rol SERIAL PRIMARY KEY,
+	rol TEXT NOT NULL UNIQUE 
+);
+COMMENT ON TABLE roles IS 'Roles que se ocuparan por cada usuario';
+
+INSERT INTO roles (rol) VALUES 
+('Admin_Doc'), 
+('Admin_User'), 
+('Recepcionista'), 
+('Veterinario'),  
+('Vendedor'),
+('Cliente'), 
+('user')
+ON CONFLICT DO NOTHING;;
+-- selects usuados para los roles 
+SELECT  * FROM roles;
+
+-- 2.2 Usuarios 
+CREATE TABLE IF NOT EXISTS usuarios (
+	id_usuario SERIAL PRIMARY KEY,
+	primer_nombre TEXT NOT NULL,
+	segundo_nombre TEXT,
+	apellido_paterno TEXT NOT NULL,
+	apellido_materno TEXT NOT NULL,
+	nombre_usuario CITEXT NOT NULL UNIQUE,
+	email CITEXT NOT NULL UNIQUE,
+	telefono TEXT,
+	fecha_ingreso TIMESTAMP NOT NULL DEFAULT now(),
+	estado BOOLEAN NOT NULL DEFAULT TRUE,
+	updated_at TIMESTAMP NOT NULL DEFAULT now(),
+	  CONSTRAINT uq_nombre_completo
+    UNIQUE (primer_nombre, segundo_nombre, apellido_paterno, apellido_materno),
+  CONSTRAINT ck_nombre_usuario_fmt
+    CHECK (length(nombre_usuario) BETWEEN 3 AND 30
+       AND nombre_usuario ~ '^[a-z0-9._-]{3,30}$'),
+  CONSTRAINT ck_telefono_fmt
+    CHECK (telefono IS NULL OR telefono ~ '^[0-9]{10}$')
+);
+COMMENT ON TABLE usuarios IS 'Usuarios del sistema (dueños, veterinarios, staff, etc.).';
+COMMENT ON COLUMN usuarios.nombre_usuario IS 'Login único; validador de formato.';
+COMMENT ON COLUMN usuarios.email IS 'Correo único (CITEXT).';
+
+
+INSERT INTO usuarios(primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, nombre_usuario, email, telefono)
+VALUES
+ ('Ana', 'Maria', 'Pérez',  'Lopez',   'ana.perez',   'ana@demo.local',   '5511122233'),  -- id 1
+ ('Bruno', NULL, 'Ruiz',   'Campos',  'bruno.ruiz', 'bruno@demo.local', '5511122244'),  -- id 2
+ ('Clara', 'Rosario', 'Diaz',   'Mendez',  'clara.diaz', 'clara@demo.local', '5511122255'),  -- id 3
+ ('Diego', NULL, 'Torres', 'Santos',  'diego.torres', 'diego@demo.local', '5511122266')   -- id 4
+ON CONFLICT DO NOTHING;
+
+-- selects usuados para los usuarios 
+SELECT * FROM usuarios ;
+
+SELECT * FROM usuarios u WHERE u.nombre_usuario ILIKE 'Bruno.ruiz';
+
+SELECT * FROM usuarios u WHERE u.id_usuario = 1 AND u.estado = TRUE;
+
+SELECT * FROM usuarios u WHERE u.nombre_usuario  = 'isaidads1s.castro1s' AND u.estado =FALSE;
+-- 2.3 Relación M:N usuario-rol
+CREATE TABLE IF NOT EXISTS usuario_rol (
+  usuario_id  BIGINT  NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  rol_id      BIGINT  NOT NULL REFERENCES roles(id_rol)        ON DELETE CASCADE,
+  PRIMARY KEY (usuario_id, rol_id)
+);
+CREATE INDEX IF NOT EXISTS idx_usuario_rol_rol ON usuario_rol(rol_id);
+
+-- Roles por usuario
+ON CONFLICT DO NOTHING;SELECT u.id_usuario, r.id_rol
+FROM usuarios u
+JOIN roles r ON ( (u.nombre_usuario='bruno' AND r.rol='Veterinario')
+               OR (u.nombre_usuario='ana'   AND r.rol='Cliente')
+               OR (u.nombre_usuario='clara' AND r.rol='Cliente')
+               OR (u.nombre_usuario='diego' AND r.rol='Recepcionista') )
+ON CONFLICT DO NOTHING;
+
+INSERT INTO usuario_rol (usuario_id, rol_id) VALUES 
+(1,1)
+ON CONFLICT DO NOTHING;
+
+-- selects usuados para los usuarios_roles 
+SELECT * FROM usuario_rol ur ;
+SELECT u.nombre_usuario, r.rol FROM usuarios u JOIN roles r ;
+
+--2.4 Autenticacion 
+CREATE TABLE IF NOT EXISTS contrasenas(
+	id_contrasena SERIAL PRIMARY KEY,
+	contrasena_hash TEXT NOT NULL,
+	usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+	CONSTRAINT ck_hash_len CHECK (length(contrasena_hash) BETWEEN 50 AND 200)
+);
+COMMENT ON TABLE contrasenas IS 'Hash de contraseñlas por usuario (BCrypt';
+
+INSERT INTO contrasenas (contrasena_hash, usuario_id) VALUES 
+ crypt('contrasena', gen_salt('bf')),
+ 1)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO contrasenas (contrasena_hash, usuario_id)
+VALUES (
+  crypt('contrasena', gen_salt('bf')),  -- Aquí se genera el hash bcrypt
+  1
+)
+ON CONFLICT DO NOTHING;
+
+-- selects usuados para las contrasenas 
+SELECT * FROM contrasenas;
+
+SELECT contrasena_hash = crypt('contrasena', contrasena_hash) 
+FROM contrasenas
+WHERE usuario_id = 1;
+
+-- 2.5 pregunta de seguridad 
+CREATE TABLE IF NOT EXISTS preguntas_seguridad(
+	id_pregunta SERIAL PRIMARY KEY,
+	pregunta TEXT NOT NULL,
+	respuesta_hash TEXT NOT NULL,
+	usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuarios(id_usuario) ON DELETE CASCADE 
+);
+COMMENT ON TABLE preguntas_seguridad IS 'Las preguntas de seguridad tiene la respuesta Hasheadas';
+
+INSERT INTO preguntas_seguridad (pregunta, respuesta_hash,usuario_id) VALUES 
+('nombre de mascota',
+crypt('perrita', gen_salt('bf')),
+1)
+ON CONFLICT DO NOTHING;
+
+-- selects usuados para las preguntas_seguridad
+SELECT * FROM preguntas_seguridad;
+
+SELECT respuesta_hash = crypt ('perrita', respuesta_hash)
+FROM preguntas_seguridad
+WHERE usuario_id = 1;
+
+CREATE TABLE IF NOT EXISTS fotos_usuarios(
+	id_foto_usuario SERIAL PRIMARY KEY ,
+	usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuarios (id_usuario) ON DELETE CASCADE,
+	foto BYTEA NOT NULL,
+--	nombre TEXT NOT NULL,
+	creado_en TIMESTAMP NOT NULL DEFAULT now(),
+	CONSTRAINT ck_foto_usuario_size CHECK (octet_length(foto) <= 1024*1021*2)
+--	CONSTRAINT ck_foto_usuario_mime CHECK (nombre LIKE 'image/%')
+);
+COMMENT ON TABLE fotos_usuarios IS 'Foto de perfil del usuario (1:1)';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
