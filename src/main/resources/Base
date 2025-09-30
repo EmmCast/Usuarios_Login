@@ -79,10 +79,10 @@ COMMENT ON COLUMN usuarios.email IS 'Correo único (CITEXT).';
 
 INSERT INTO usuarios(primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, nombre_usuario, email, telefono)
 VALUES
- ('Ana', 'Maria', 'Pérez',  'Lopez',   'ana.perez',   'ana@demo.local',   '5511122233'),  -- id 1
- ('Bruno', NULL, 'Ruiz',   'Campos',  'bruno.ruiz', 'bruno@demo.local', '5511122244'),  -- id 2
- ('Clara', 'Rosario', 'Diaz',   'Mendez',  'clara.diaz', 'clara@demo.local', '5511122255'),  -- id 3
- ('Diego', NULL, 'Torres', 'Santos',  'diego.torres', 'diego@demo.local', '5511122266')   -- id 4
+ ('Ana', 'Maria', 'Pérez',  'Lopez',   'ana.perez',   'ana@demo.local',   '5511122233'),
+ ('Bruno', NULL, 'Ruiz',   'Campos',  'bruno.ruiz', 'bruno@demo.local', '5511122244'), 
+ ('Clara', 'Rosario', 'Diaz',   'Mendez',  'clara.diaz', 'clara@demo.local', '5511122255'), 
+ ('Diego', NULL, 'Torres', 'Santos',  'diego.torres', 'diego@demo.local', '5511122266')   
 ON CONFLICT DO NOTHING;
 
 -- selects usuados para los usuarios 
@@ -134,7 +134,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO contrasenas (contrasena_hash, usuario_id)
 VALUES (
-  crypt('contrasena', gen_salt('bf')),  -- Aquí se genera el hash bcrypt
+  crypt('contrasena', gen_salt('bf')),  
   1
 )
 ON CONFLICT DO NOTHING;
@@ -158,7 +158,7 @@ COMMENT ON TABLE preguntas_seguridad IS 'Las preguntas de seguridad tiene la res
 INSERT INTO preguntas_seguridad (pregunta, respuesta_hash,usuario_id) VALUES 
 ('nombre de mascota',
 crypt('perrita', gen_salt('bf')),
-1)
+7)
 ON CONFLICT DO NOTHING;
 
 -- selects usuados para las preguntas_seguridad
@@ -180,10 +180,13 @@ CREATE TABLE IF NOT EXISTS fotos_usuarios(
 COMMENT ON TABLE fotos_usuarios IS 'Foto de perfil del usuario (1:1)';
 
 
-
-
-
-
+SELECT EXISTS ( SELECT  FROM preguntas_seguridad ps WHERE ps.usuario_id = 7);
+SELECT * FROM preguntas_seguridad ps WHERE ps.usuario_id  = 8;
+SELECT * FROM preguntas_seguridad ps ;
+SELECT * FROM contrasenas c ;
+SELECT * FROM usuarios; 
+SELECT * FROM usuarios u WHERE u.email = 'ssss@example.com' AND u.estado = TRUE ;
+SELECT * FROM contrasenas c  WHERE c.usuario_id = 7;
 
 
 

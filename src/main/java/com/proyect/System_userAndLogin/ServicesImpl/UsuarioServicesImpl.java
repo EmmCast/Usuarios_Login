@@ -194,7 +194,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 		    } catch (Exception e) {
 		        logger.error("Error al guardar usuario", e);
-		        response.setMetdata("Error", "-1", "No se pudo guardar el usuario");
+		        response.setMetdata("nOk", "-1", "No se pudo guardar el usuario");
 		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		    }
 		}
@@ -208,7 +208,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	        Optional<Usuario> usuarioOpt = usuarioRepository.findByIdActivo(idUsuario);
 
 	        if (usuarioOpt.isEmpty()) {
-	            response.setMetdata("No encontrado", "-1", "Usuario no encontrado");
+	            response.setMetdata("nOk", "-1", "Usuario no encontrado");
 	            // 404 con body (tu cliente verá el JSON)
 	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	        }
@@ -230,7 +230,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 	    } catch (Exception e) {
 	        logger.error("Error al buscar usuario por Id {}", idUsuario, e);
-	        response.setMetdata("Error", "-1", "Error interno al buscar el usuario");
+	        response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 	    }
 	}
@@ -260,7 +260,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 			return ResponseEntity.ok(response);
 		}catch (Exception e) {
 	        logger.error("Error al buscar usuario por Id {}", username, e);
-	        response.setMetdata("Error", "-1", "Error interno al buscar el usuario");
+	        response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		}
 	}
@@ -287,7 +287,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 			
 		}catch (Exception e) {
 			logger.error("Error al buscar a todos los usuarios", e);
-			response.setMetdata("respuesta nOk", "-1", "Error al buscar los usuarios");
+			response.setMetdata(" nOk", "-1", "Error al buscar los usuarios");
 			return new ResponseEntity<> (response, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -314,7 +314,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 			
 		}catch (Exception e) {
 			logger.error("Error al buscar a todos los usuarios", e);
-			response.setMetdata("respuesta nOk", "-1", "Error al buscar los usuarios");
+			response.setMetdata("nOk", "-1", "Error al buscar los usuarios");
 			return new ResponseEntity<> (response, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -328,7 +328,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 	        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdActivo(idUsuario);
 
 	        if (!usuarioOptional.isPresent()) {
-	            response.setMetdata("Error", "-1", "Usuario no encontrado");
+	            response.setMetdata("nOk", "-1", "Usuario no encontrado");
 	            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 	        }
 
@@ -357,7 +357,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 	    } catch (Exception e) {
 	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("Error", "-1", "No se pudo actualizar el usuario");
+	        response.setMetdata("nOk", "-1", "No se pudo actualizar el usuario");
 	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 	    }
 	}
@@ -371,7 +371,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
 
 		        if (!usuarioOptional.isPresent()) {
-		            response.setMetdata("Error", "-1", "Usuario no encontrado");
+		            response.setMetdata("nOk", "-1", "Usuario no encontrado");
 		            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 		        }
 
@@ -389,7 +389,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 		    } catch (Exception e) {
 		        logger.error("Error al actualizar usuario", e);
-		        response.setMetdata("Error", "-1", "No se pudo Eliminar el usuario");
+		        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
 		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		    }
 	}
@@ -419,7 +419,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 	    } catch (Exception e) {
 	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("Error", "-1", "No se pudo Eliminar el usuario");
+	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
 	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 	    }
 	}
@@ -433,7 +433,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
 
 		        if (!usuarioOptional.isPresent()) {
-		            response.setMetdata("Error", "-1", "Usuario no encontrado");
+		            response.setMetdata("nOk", "-1", "Usuario no encontrado");
 		            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 		        }
 
@@ -449,7 +449,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 		    } catch (Exception e) {
 		        logger.error("Error al actualizar usuario", e);
-		        response.setMetdata("Error", "-1", "No se pudo Eliminar el usuario");
+		        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
 		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 		    }
 	}
@@ -478,7 +478,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 	    } catch (Exception e) {
 	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("Error", "-1", "No se pudo Eliminar el usuario");
+	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
 	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 	    }
 	}
@@ -508,7 +508,7 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 
 	    } catch (Exception e) {
 	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("Error", "-1", "No se pudo Eliminar el usuario");
+	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
 	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 	    }
 	}

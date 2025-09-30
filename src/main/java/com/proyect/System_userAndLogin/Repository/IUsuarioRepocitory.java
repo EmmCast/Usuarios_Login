@@ -40,6 +40,10 @@ public interface IUsuarioRepocitory extends JpaRepository<Usuario, Long>{
     @Query(value = "SELECT * FROM usuarios u WHERE u.nombre_usuario  =:username  AND u.estado = FALSE "
     		,nativeQuery = true)
 	Optional<Usuario> findUsernameByInactivo(String username);
+
+    @Query(value = "SELECT * FROM usuarios u WHERE u.email  =:email  AND u.estado = TRUE "
+    		,nativeQuery = true) 
+	Optional<Usuario> findByEmailIgnoreCase(String email);
 	
 
 }

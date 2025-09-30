@@ -9,11 +9,10 @@ import com.proyect.System_userAndLogin.Response.PreguntaSeguridadResponse.Pregun
 public interface IPreguntaSeguridadServices {
 
 	ResponseEntity<PreguntaSeguridadResponseRest> crearPregunta(PreguntaSeguridadDto preguntaSeguridad);
-	
     PreguntaSeguridadResponseRest obtenerPorUsuarioId(Long idUsuario);
-    
     ResponseRest validarRespuestaSeguridad(Long idUsuario, String respuesta);
-    
-    ResponseEntity<PreguntaSeguridadResponseRest> cambiarPregunta(Long idUsuario, PreguntaSeguridadDto actualizarPregunta);
+    ResponseEntity<PreguntaSeguridadResponseRest>  cambiarPregunta(Long idUsuario,PreguntaSeguridadDto dto);
+	
+    void crearOActualizar(Long idUsuario, String pregunta, String respuesta);
     
 }
