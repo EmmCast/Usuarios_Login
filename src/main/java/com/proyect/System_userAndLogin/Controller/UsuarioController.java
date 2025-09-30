@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +22,8 @@ import com.proyect.System_userAndLogin.Dto.UsuarioDto;
 import com.proyect.System_userAndLogin.Response.ResponseUsuario.UsuarioResponseRest;
 import com.proyect.System_userAndLogin.Services.IUsuarioServices;
 import com.proyect.System_userAndLogin.Util.Util;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/usuarios")
@@ -62,7 +65,7 @@ public class UsuarioController {
 		return response;
 	}
 	*/
-
+	/*
 	@PostMapping("/saveUsuario")
 	public ResponseEntity<UsuarioResponseRest> saveUsuario (
 			@RequestParam ("primerNombre")String primerNombre,
@@ -90,6 +93,20 @@ public class UsuarioController {
 		
 		return response;
 	}
+	*/
+	
+	@PostMapping("/saveUsuario")
+	public ResponseEntity<UsuarioResponseRest> saveUsuario(
+			@Valid @RequestParam("usuario") UsuarioDto usuarioDto,
+			@RequestPart(value = "fotoUsuario", required = false) MultipartFile  fotoUsuario
+			)throws IOException {
+		if(fotoUsuario != null && !fotoUsuario.isEmpty()) {
+			usuarioDto.setFotoUsuario(Util.compressZLib(fotoUsuario.getBytes()));
+		}
+		return usuarioServices.guardarUsuario(usuarioDto);
+	}
+			
+	
 	
 	@GetMapping("/listarUsuarios")
 	public ResponseEntity<UsuarioResponseRest> ListarUsuarios(){

@@ -74,7 +74,6 @@ public class FotoUsuarioServicesImpl implements IFotoUsuarioServices{
 	                foto.setFoto(imagen);
 	                return fotoUsuarioRepository.save(foto);
 	            } else {
-	                // Si no existe, se guarda como nueva
 	                return guardarFoto(idUsuario, imagen);
 	            }
 	        } catch (Exception e) {

@@ -111,7 +111,7 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
 
             Contrasena actual = contrasenaOpt.get();
 
-            boolean ok = Util.verificarTexto(contrasenaActual, actual.getContrasena()); // BCrypt.matches
+            boolean ok = Util.verificarTexto(contrasenaActual, actual.getContrasena()); 
             if (!ok) {
                 response.setMetdata("nOK", "-1", "Contraseña actual incorrecta");
                 return response;
@@ -155,7 +155,7 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
             preguntaSeguridadServices.crearOActualizar(
                 idUsuario,
                 dto.getPregunta(),
-                dto.getRespuesta() // texto plano; el service debe hashearla
+                dto.getRespuesta() 
             );
 
             Optional<Contrasena> contrasenaOpt = contrasenaRepository.findByUsuarioId(idUsuario);
