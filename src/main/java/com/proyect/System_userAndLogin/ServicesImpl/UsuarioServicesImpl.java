@@ -178,7 +178,8 @@ public class UsuarioServicesImpl implements IUsuarioServices{
 		        ContrasenaDto contrasena = new ContrasenaDto();
 		        
 		        contrasena.setIdUsuario(usuarioGuardado.getIdUsuario());
-		        contrasena.setContrasena(dto.getPrimerNombre().concat(".").concat(dto.getApellidoPaterno()));
+//		        contrasena.setContrasena(dto.getPrimerNombre().concat(".").concat(dto.getApellidoPaterno()));
+		        contrasena.setContrasena(usuarioGuardado.getNombreUsuario());
 		        
 		        contrasenaServices.crearContrasena(contrasena);
 		        

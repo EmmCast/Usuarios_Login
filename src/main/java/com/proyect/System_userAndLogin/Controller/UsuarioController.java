@@ -105,8 +105,6 @@ public class UsuarioController {
 		}
 		return usuarioServices.guardarUsuario(usuarioDto);
 	}
-			
-	
 	
 	@GetMapping("/listarUsuarios")
 	public ResponseEntity<UsuarioResponseRest> ListarUsuarios(){

@@ -2,6 +2,7 @@ package com.proyect.System_userAndLogin.Services;
 
 import org.springframework.http.ResponseEntity;
 
+import com.proyect.System_userAndLogin.Dto.ActualizarContrasenaDto;
 import com.proyect.System_userAndLogin.Dto.ContrasenaDto;
 import com.proyect.System_userAndLogin.Dto.PreguntaSeguridadDto;
 import com.proyect.System_userAndLogin.Dto.UsuarioDto;
@@ -14,7 +15,7 @@ public interface IContrasenaServices {
     ResponseEntity<ContrasenaResponseRest> crearContrasena(ContrasenaDto creaContrasena);
     
 	 // Cambio voluntario (usuario autenticado)
-    ContrasenaResponseRest actualizarContrasena(Long idUsuario, String contrasenaActual, String contrasenaNueva);
+    ContrasenaResponseRest actualizarContrasena(Long idUsuario, ActualizarContrasenaDto actContra);
     
     // Primera vez: guarda la pregunta y la nueva contraseña
     ContrasenaResponseRest crearPreguntaYActualizarContrasena(Long idUsuario, PreguntaSeguridadDto dto, String nuevaContrasena);

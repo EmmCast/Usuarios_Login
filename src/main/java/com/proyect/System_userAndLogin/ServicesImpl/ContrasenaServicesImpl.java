@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.proyect.System_userAndLogin.Dto.ActualizarContrasenaDto;
 import com.proyect.System_userAndLogin.Dto.ContrasenaDto;
 import com.proyect.System_userAndLogin.Dto.PreguntaSeguridadDto;
 import com.proyect.System_userAndLogin.Model.Contrasena;
@@ -92,7 +93,9 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
 
     @Override
     @Transactional
-    public ContrasenaResponseRest actualizarContrasena(Long idUsuario, String contrasenaActual, String contrasenaNueva) {
+    public ContrasenaResponseRest actualizarContrasena(Long idUsuario, ActualizarContrasenaDto actContra
+    		//, String contrasenaActual, String contrasenaNueva
+    		) {
         ContrasenaResponseRest response = new ContrasenaResponseRest();
         List<ContrasenaDto> lista = new ArrayList<>();
 
@@ -111,13 +114,13 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
 
             Contrasena actual = contrasenaOpt.get();
 
-            boolean ok = Util.verificarTexto(contrasenaActual, actual.getContrasena()); 
+            boolean ok = Util.verificarTexto(actContra.getContrasenaActual(), actual.getContrasena()); 
             if (!ok) {
                 response.setMetdata("nOK", "-1", "Contraseña actual incorrecta");
                 return response;
             }
 
-            String nuevoHash = Util.encriptarTexto(contrasenaNueva);
+            String nuevoHash = Util.encriptarTexto(actContra.getContrasenaNueva());
             actual.setContrasena(nuevoHash);
             contrasenaRepository.save(actual);
 
@@ -254,6 +257,9 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
 
         try {
             Optional<Contrasena> contrasenaOpt = contrasenaRepository.findByUsuarioId(idUsuario);
+            logger.error(":::::::::::::::entra query::::::::::::::::::"+ idUsuario);
+            System.err.println(":::::::::::::::entra contrasenaOpt.get()1::::::::::::::::::"+ contrasenaOpt.get().getContrasena());
+            logger.error(":::::::::::::::entra contrasenaOpt.get()::::::::::::::::::"+ contrasenaOpt.get().toString());
             if (!contrasenaOpt.isPresent()) {
                 response.setMetdata("NO OK", "-1", "No existe contraseña registrada para el usuario");
                 return response;
