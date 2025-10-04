@@ -2,14 +2,25 @@ package com.proyect.System_userAndLogin.Response.PreguntaSeguridadResponse;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.proyect.System_userAndLogin.Dto.PreguntaSeguridadDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+/**
+ 
+ Contenedor para una lista de {@link PreguntaSeguridadDto}.
+  
+ Se utiliza dentro de {@link PreguntaSeguridadResponseRest} para
+ devolver múltiples preguntas de seguridad asociadas a usuarios.
+  
+  @author Emmanuel
+  @version 1.5
+  @since 2025-10
+ 
+ **/
 
 //@JsonIgnoreProperties({ "preguntaSeguridads" })
 @Setter
@@ -18,6 +29,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PreguntaSeguridadResponse {
 	
+    /** Lista de preguntas de seguridad transferidas en la respuesta. */
 //	@JsonProperty("preguntaSeguridad")
 	private List<PreguntaSeguridadDto> preguntaSeguridad;
 	

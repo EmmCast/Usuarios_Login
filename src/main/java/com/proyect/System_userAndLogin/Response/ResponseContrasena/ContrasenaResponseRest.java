@@ -7,6 +7,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+Respuesta REST extendida para contraseñas.
+  
+Incluye metadatos comunes (desde {@link ResponseRest})
+y un objeto {@link ContrasenaResponse} con la data.
+  
+@author Emmanuel
+@version 1.5
+@since 2025-10
+
+**/
+
 @Setter
 @Getter
 @NoArgsConstructor

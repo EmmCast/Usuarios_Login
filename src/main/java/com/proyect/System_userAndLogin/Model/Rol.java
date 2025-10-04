@@ -18,26 +18,38 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ 
+ 	Entidad que representa los roles del sistema.	  
+	Un rol puede estar asociado a múltiples usuarios
+	y define permisos dentro de la aplicación.
+	 
+	@author Emmanuel 
+ 	@version 1.5
+ 	@since 2025-10
+
+ **/
 @Entity
 @Table(name = "Roles")
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
 @Getter
-public class Rol implements Serializable{
+public class Rol implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-	private static final long serialVersionUID = 1L;
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_rol")
-	private Long idRol;
-	
-	@Column(name = "rol")
-	private String rol;
-	
-	@ManyToMany(mappedBy = "roles")
-	@JsonIgnore
-	private Set<Usuario> usuarios = new HashSet<>();
+    /** Identificador único del rol (PK). */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_rol")
+    private Long idRol;
 
+    /** Nombre del rol (ejemplo: ADMIN, USER). */
+    @Column(name = "rol")
+    private String rol;
+
+    /** Usuarios que poseen este rol (relación inversa N:M). */
+    @ManyToMany(mappedBy = "roles")
+    @JsonIgnore
+    private Set<Usuario> usuarios = new HashSet<>();
 }

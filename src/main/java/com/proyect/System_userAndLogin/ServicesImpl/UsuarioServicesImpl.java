@@ -15,6 +15,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.proyect.System_userAndLogin.Dto.ContrasenaDto;
 import com.proyect.System_userAndLogin.Dto.UsuarioDto;
@@ -28,490 +29,601 @@ import com.proyect.System_userAndLogin.Services.IFotoUsuarioServices;
 import com.proyect.System_userAndLogin.Services.IRolServices;
 import com.proyect.System_userAndLogin.Services.IUsuarioServices;
 
-import jakarta.transaction.Transactional;
 
+/**
+ 
+ Implementación del servicio de negocio para la gestión de usuarios.
+ 
+ Responsabilidades principales:
+ 
+    Crear usuarios y resolver colisiones de username con reintentos controlados.
+    Consultar usuarios por ID o username (solo activos cuando aplica).
+    Listar usuarios activos e inactivos.
+    Actualización de datos básicos y roles.
+    Eliminación lógica (desactivar) y eliminación física (borrado definitivo).
+    Reactivación por username.
+    Sincronización con servicios relacionados: contraseñas y fotos.
+ 
+  Notas técnicas:
+  
+    Uso de {@code @Transactional} donde corresponde (escrituras y operaciones compuestas).
+    Estrategia de reintentos al generar username cuando hay colisiones (hasta 5 intentos).
+    Mapeo entidad ⇄ DTO aislado en un helper privado para mantener consistencia.
+  
+ 
+  Las respuestas siguen el patrón ResponseRest para incluir metadatos estándar.
+ 
+ @author Emmanuel
+ @version 1.5
+ @since 2025-10
+
+ **/
 @Service
-public class UsuarioServicesImpl implements IUsuarioServices{
+public class UsuarioServicesImpl implements IUsuarioServices {
 
- //   private final ContrasenaServicesImpl contrasenaServicesImpl;
+    /** Logger de la clase para auditoría y diagnóstico. */
+    private static final Logger logger = LoggerFactory.getLogger(UsuarioServicesImpl.class);
 
-	private static final Logger logger = LoggerFactory.getLogger(UsuarioServicesImpl.class);
-	
-	private final IUsuarioRepocitory usuarioRepository;
-	
-	private final IRolServices rolServices;
-	
-	private final IContrasenaServices contrasenaServices;
-	
-	private final IFotoUsuarioServices fotoUsuarioServices;
-	
-	private final userNameServicesImpl userNameServ;
-	
-/*	
-	@Autowired
-	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,IRolServices rolServices,
-			IContrasenaServices contrasenaServices, @Lazy IFotoUsuarioServices fotoUsuarioServices) {
-		this.usuarioRepository = usuarioRepository;
-		this.rolServices = rolServices;
-		this.contrasenaServices = contrasenaServices;
-		this.fotoUsuarioServices = fotoUsuarioServices;
-	}
-*/
-	
-	@Autowired
-	public UsuarioServicesImpl (IUsuarioRepocitory usuarioRepository,
-								userNameServicesImpl userNameServ,
-	                            IRolServices rolServices,
-	                            IContrasenaServices contrasenaServices,
-	                            @Lazy IFotoUsuarioServices fotoUsuarioServices, ContrasenaServicesImpl contrasenaServicesImpl) {
-	    this.usuarioRepository = usuarioRepository;
-	    this.userNameServ = userNameServ;
-	    this.rolServices = rolServices;
-	    this.contrasenaServices = contrasenaServices;
-	    this.fotoUsuarioServices = fotoUsuarioServices;
-//	    this.contrasenaServicesImpl = contrasenaServicesImpl;
-	}
-	
-	private UsuarioDto mapperUsuarioDto(Usuario usuario) {
-		UsuarioDto dto = new UsuarioDto();
-		dto.setIdUsuario(usuario.getIdUsuario());
-		
-		dto.setNombreUsuario(usuario.getNombreUsuario());
-		dto.setPrimerNombre(usuario.getPrimerNombre());
-		dto.setSegundoNombre(usuario.getSegundoNombre());
-		dto.setApellidoPaterno(usuario.getApellidoPaterno());
-		dto.setApellidoMaterno(usuario.getApellidoMaterno());
-		dto.setEmail(usuario.getEmail());
-		dto.setTelefono(usuario.getTelefono());
-		
-		dto.setFechaIngreso(usuario.getFechaIngreso());
-		
-		if (usuario.getFotoUsuario() != null) {
-		    dto.setFotoUsuario(usuario.getFotoUsuario().getFoto());
-		}
-/*
-		Set<Rol> roles = dto.getRolesIds().stream()
-	            .map(rolServices::buscarPorId)
-	            .filter(Objects::nonNull)
-	            .collect(Collectors.toSet());
+    /** Repositorio de acceso a datos de usuarios. */
+    private final IUsuarioRepocitory usuarioRepository;
 
-	        usuario.setRoles(roles);
-	*/
-	    Set<Long> rolesIds = (usuario.getRoles() == null) ? java.util.Set.of()
-	            : usuario.getRoles().stream().map(Rol::getIdRol).collect(java.util.stream.Collectors.toSet());
-	    dto.setRolesIds(rolesIds);
-	/*    
-	    Set<String> rolesNombres = (usuario.getRoles()==null)? Set.of()
-	    	    : usuario.getRoles().stream().map(Rol::getRol).collect(Collectors.toSet());
-	    	dto.setRoles(rolesNombres);
-	  */  
-		return dto;
-	}
-	
-	@Transactional
-	public Usuario crearUsuario(Usuario nuevo) {
-	    int reintentos = 0;
-	    while (true) {
-	        try {
-	            String username = userNameServ.generarUsuario(nuevo.getPrimerNombre(),nuevo.getApellidoPaterno());
-	            nuevo.setNombreUsuario(username);
-	            return usuarioRepository.save(nuevo);
-	        } catch (DataIntegrityViolationException ex) {
-	            if (++reintentos > 5) throw ex;
-	        }
-	    }
-	}
-	
-	@Override
-	@Transactional
-	public ResponseEntity<UsuarioResponseRest> guardarUsuario(UsuarioDto dto) {
-		  UsuarioResponseRest response = new UsuarioResponseRest();
-		    List<UsuarioDto> lista = new ArrayList<>();
+    /** Servicio de catálogo de roles. */
+    private final IRolServices rolServices;
 
-		    try {
-		        Usuario usuario = new Usuario();
-		        usuario.getIdUsuario();
-		        usuario.setPrimerNombre(dto.getPrimerNombre());
-		        usuario.setSegundoNombre(dto.getSegundoNombre());
-		        usuario.setApellidoPaterno(dto.getApellidoPaterno());
-		        usuario.setApellidoMaterno(dto.getApellidoMaterno());
-		        usuario.setEmail(dto.getEmail());
-		        usuario.setTelefono(dto.getTelefono());
-		        usuario.getFechaIngreso();
-		        usuario.getUpdated_at();
-//		        usuario.setNombreUsuario(dto.getPrimerNombre().concat(dto.getApellidoMaterno()));
-		        usuario.setEstado(true);
+    /** Servicio de gestión de contraseñas. */
+    private final IContrasenaServices contrasenaServices;
 
-		        // Asignar roles desde ids
-		        Set<Rol> roles = dto.getRolesIds().stream()
-			            .map(rolServices::buscarPorId)
-			            .filter(Objects::nonNull)
-			            .collect(Collectors.toSet());
+    /** Servicio de gestión de fotos de usuario. */
+    private final IFotoUsuarioServices fotoUsuarioServices;
 
-		        usuario.setRoles(roles);
+    /** Servicio auxiliar para generación de nombres de usuario únicos. */
+    private final userNameServicesImpl userNameServ;
 
-		        int reintentos = 0;
-	            Usuario usuarioGuardadoU = null;
-	            while (true) {
-	                try {
-	                    String username =  userNameServ.generarUsuario(
-	                            dto.getPrimerNombre(), dto.getApellidoPaterno());
-	                    usuario.setNombreUsuario(username);
-	                    usuarioGuardadoU = usuarioRepository.saveAndFlush(usuario); 
-	                    break;
-	                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-	                    Throwable root = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(ex);
-	                    String msg = root != null ? root.getMessage() : ex.getMessage();
-	                    if (msg != null && msg.toLowerCase().contains("nombre_usuario")) {
-	                        if (++reintentos <= 5) {
-	                            logger.warn("Choque de username, reintentando (intento {})", reintentos);
-	                            continue;
-	                        }
-	                    }
-	                    response.setMetdata("Conflicto", "409", "Datos duplicados: " + msg);
-	                    return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-	                }
-	            }
-		        
-		        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+    // private final ContrasenaServicesImpl contrasenaServicesImpl;
 
-		        ContrasenaDto contrasena = new ContrasenaDto();
-		        
-		        contrasena.setIdUsuario(usuarioGuardado.getIdUsuario());
-//		        contrasena.setContrasena(dto.getPrimerNombre().concat(".").concat(dto.getApellidoPaterno()));
-		        contrasena.setContrasena(usuarioGuardado.getNombreUsuario());
-		        
-		        contrasenaServices.crearContrasena(contrasena);
-		        
-		        if (dto.getFotoUsuario() != null) {
-		        	fotoUsuarioServices.guardarFoto(usuarioGuardado.getIdUsuario(), dto.getFotoUsuario());
-		        }
+    /**
+     Constructor con inyección de dependencias.
+     
+     @param usuarioRepository repositorio de usuarios
+     @param userNameServ servicio de generación de username
+     @param rolServices servicio de roles
+     @param contrasenaServices servicio de contraseñas
+     @param fotoUsuarioServices servicio de fotos (lazy para evitar ciclos)
+     @param contrasenaServicesImpl (no utilizado actualmente)
+     
+     */
+    @Autowired
+    public UsuarioServicesImpl(IUsuarioRepocitory usuarioRepository,
+                               userNameServicesImpl userNameServ,
+                               IRolServices rolServices,
+                               IContrasenaServices contrasenaServices,
+                               @Lazy IFotoUsuarioServices fotoUsuarioServices,
+                               ContrasenaServicesImpl contrasenaServicesImpl) {
+        this.usuarioRepository = usuarioRepository;
+        this.userNameServ = userNameServ;
+        this.rolServices = rolServices;
+        this.contrasenaServices = contrasenaServices;
+        this.fotoUsuarioServices = fotoUsuarioServices;
+        // this.contrasenaServicesImpl = contrasenaServicesImpl;
+    }
 
-		        UsuarioDto dtoFinal = mapperUsuarioDto(usuarioGuardado);
-		        lista.add(dtoFinal);
-		        response.getUsuarioResponse().setUsuario(lista);
-		        response.setMetdata("OK", "1", "Usuario guardado correctamente");
-		        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    /**
+     Mapea una entidad {@link Usuario} a su correspondiente {@link UsuarioDto}.
+     Incluye extracción de bytes de la foto cuando existe y convierte la colección
+     de {@link Rol} en un conjunto de IDs para mantener el desacoplamiento.
+     
+     @param usuario entidad de usuario origen
+     @return DTO con datos proyectados para capa superior
+     
+     */
+    private UsuarioDto mapperUsuarioDto(Usuario usuario) {
+        UsuarioDto dto = new UsuarioDto();
+        dto.setIdUsuario(usuario.getIdUsuario());
 
-		    } catch (Exception e) {
-		        logger.error("Error al guardar usuario", e);
-		        response.setMetdata("nOk", "-1", "No se pudo guardar el usuario");
-		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-		    }
-		}
-		
-	@Override
-	@Transactional()
-	public ResponseEntity<UsuarioResponseRest> buscarPorId(Long idUsuario) {
-	    UsuarioResponseRest response = new UsuarioResponseRest();
-	    List<UsuarioDto> lista = new ArrayList<>();
-	    try {
-	        Optional<Usuario> usuarioOpt = usuarioRepository.findByIdActivo(idUsuario);
+        dto.setNombreUsuario(usuario.getNombreUsuario());
+        dto.setPrimerNombre(usuario.getPrimerNombre());
+        dto.setSegundoNombre(usuario.getSegundoNombre());
+        dto.setApellidoPaterno(usuario.getApellidoPaterno());
+        dto.setApellidoMaterno(usuario.getApellidoMaterno());
+        dto.setEmail(usuario.getEmail());
+        dto.setTelefono(usuario.getTelefono());
 
-	        if (usuarioOpt.isEmpty()) {
-	            response.setMetdata("nOk", "-1", "Usuario no encontrado");
-	            // 404 con body (tu cliente verá el JSON)
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-	        }
+        dto.setFechaIngreso(usuario.getFechaIngreso());
 
-	        Usuario usuario = usuarioOpt.get();
-	        UsuarioDto dto = mapperUsuarioDto(usuario);
+        if (usuario.getFotoUsuario() != null) {
+            dto.setFotoUsuario(usuario.getFotoUsuario().getFoto());
+        }
 
-	        // Mejor usa el id del propio objeto por seguridad
-	        FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
-	        if (foto != null) {
-	            dto.setFotoUsuario(foto.getFoto());
-	        }
+        Set<Long> rolesIds = (usuario.getRoles() == null)
+                ? java.util.Set.of()
+                : usuario.getRoles().stream().map(Rol::getIdRol).collect(java.util.stream.Collectors.toSet());
+        dto.setRolesIds(rolesIds);
 
-	        lista.add(dto);
-	        response.getUsuarioResponse().setUsuario(lista);
-	        response.setMetdata("OK", "1", "Usuario encontrado");
+        return dto;
+    }
 
-	        return ResponseEntity.ok(response);
+    /**
+      Crea un usuario persistiendo en base de datos, generando y asignando
+      un {@code username} único a partir del primer nombre y apellido paterno.
+     
+      Si se detecta colisión de unicidad por nombre de usuario, reintenta hasta 5 veces
+      antes de propagar {@link DataIntegrityViolationException}.
+     
+      @param nuevo entidad usuario a crear (sin ID)
+      @return usuario persistido con username asignado
+      @throws DataIntegrityViolationException si tras 5 reintentos persiste el conflicto
+     */
+    @Transactional
+    public Usuario crearUsuario(Usuario nuevo) {
+        int reintentos = 0;
+        while (true) {
+            try {
+                String username = userNameServ.generarUsuario(nuevo.getPrimerNombre(), nuevo.getApellidoPaterno());
+                nuevo.setNombreUsuario(username);
+                return usuarioRepository.save(nuevo);
+            } catch (DataIntegrityViolationException ex) {
+                if (++reintentos > 5) throw ex;
+            }
+        }
+    }
 
-	    } catch (Exception e) {
-	        logger.error("Error al buscar usuario por Id {}", idUsuario, e);
-	        response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-	    }
-	}
-	
-	@Override
-	public ResponseEntity<UsuarioResponseRest> buscarPorUserNameActivo(String username) {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		try {
-			Optional<Usuario> usuarioOptional = usuarioRepository.findUsername(username);
-			if(usuarioOptional.isEmpty()) {
-				response.setMetdata("nOk", "-1", "Usuario No encontrado");
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-			}
-			
-			Usuario usuario = usuarioOptional.get();
-			UsuarioDto dto = mapperUsuarioDto(usuario);
-			
-			FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
-			if(foto != null) {
-				dto.setFotoUsuario(foto.getFoto());
-			}
-			
-			lista.add(dto);
-			response.getUsuarioResponse().setUsuario(lista);
-			response.setMetdata("Ok", "1", "Usuario encontrado");
-			return ResponseEntity.ok(response);
-		}catch (Exception e) {
-	        logger.error("Error al buscar usuario por Id {}", username, e);
-	        response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-		}
-	}
-	
-	@Override
-	public ResponseEntity<UsuarioResponseRest> buscarTodosActivos() {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		
-		try {
-			List<Usuario> usuarios = usuarioRepository.findAllActivos();
-			
-			for(Usuario usuario : usuarios) {
-				UsuarioDto dto = mapperUsuarioDto(usuario);
-				FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
-				if(foto != null) {
-					dto.setFotoUsuario(foto.getFoto());
-				}
-				lista.add(dto);
-			}
-			response.getUsuarioResponse().setUsuario(lista);
-			response.setMetdata("Ok", "1", "Usuarios Encontrados");
-			return new ResponseEntity<>(response, HttpStatus.OK);
-			
-		}catch (Exception e) {
-			logger.error("Error al buscar a todos los usuarios", e);
-			response.setMetdata(" nOk", "-1", "Error al buscar los usuarios");
-			return new ResponseEntity<> (response, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
-	
-	@Override
-	public ResponseEntity<UsuarioResponseRest> buscarTodosInactivos() {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		
-		try {
-			List<Usuario> usuarios = usuarioRepository.findAllInactivos();
-			
-			for(Usuario usuario : usuarios) {
-				UsuarioDto dto = mapperUsuarioDto(usuario);
-				FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
-				if(foto != null) {
-					dto.setFotoUsuario(foto.getFoto());
-				}
-				lista.add(dto);
-			}
-			response.getUsuarioResponse().setUsuario(lista);
-			response.setMetdata("Ok", "1", "Usuarios Encontrados");
-			return new ResponseEntity<>(response, HttpStatus.OK);
-			
-		}catch (Exception e) {
-			logger.error("Error al buscar a todos los usuarios", e);
-			response.setMetdata("nOk", "-1", "Error al buscar los usuarios");
-			return new ResponseEntity<> (response, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+    /**
+      Guarda un nuevo usuario a partir de {@link UsuarioDto}, asigna roles,
+      genera username único, crea contraseña inicial (usando el username) y,
+      opcionalmente, guarda foto de perfil.
+     
+      En caso de colisión por {@code nombre_usuario}, aplica reintentos controlados.
+     
+      @param dto datos de entrada
+      @return {@link ResponseEntity} con {@link UsuarioResponseRest} y estatus 201 si exitoso
+     
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> guardarUsuario(UsuarioDto dto) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
 
-	@Override
-	public ResponseEntity<UsuarioResponseRest> actualizarUsuario(Long idUsuario, UsuarioDto dto) {
-	    UsuarioResponseRest response = new UsuarioResponseRest();
-	    List<UsuarioDto> lista = new ArrayList<>();
+        try {
+            Usuario usuario = new Usuario();
+            usuario.getIdUsuario(); 
+            usuario.setPrimerNombre(dto.getPrimerNombre());
+            usuario.setSegundoNombre(dto.getSegundoNombre());
+            usuario.setApellidoPaterno(dto.getApellidoPaterno());
+            usuario.setApellidoMaterno(dto.getApellidoMaterno());
+            usuario.setEmail(dto.getEmail());
+            usuario.setTelefono(dto.getTelefono());
+            usuario.getFechaIngreso(); 
+            usuario.getUpdated_at();   
+            usuario.setEstado(true);
 
-	    try {
-	        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdActivo(idUsuario);
+            // Asignar roles desde ids
+            Set<Rol> roles = dto.getRolesIds().stream()
+                    .map(rolServices::buscarPorId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            usuario.setRoles(roles);
 
-	        if (!usuarioOptional.isPresent()) {
-	            response.setMetdata("nOk", "-1", "Usuario no encontrado");
-	            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-	        }
+            int reintentos = 0;
+            Usuario usuarioGuardadoU = null;
+            while (true) {
+                try {
+                    String username = userNameServ.generarUsuario(dto.getPrimerNombre(), dto.getApellidoPaterno());
+                    usuario.setNombreUsuario(username);
+                    // saveAndFlush para forzar validaciones de unicidad y detectar colisiones inmediatamente
+                    usuarioGuardadoU = usuarioRepository.saveAndFlush(usuario);
+                    break;
+                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                    Throwable root = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(ex);
+                    String msg = root != null ? root.getMessage() : ex.getMessage();
+                    if (msg != null && msg.toLowerCase().contains("nombre_usuario")) {
+                        if (++reintentos <= 5) {
+                            logger.warn("Choque de username, reintentando (intento {})", reintentos);
+                            continue;
+                        }
+                    }
+                    response.setMetdata("Conflicto", "409", "Datos duplicados: " + msg);
+                    return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                }
+            }
 
-	        Usuario usuario = usuarioOptional.get();
-	        usuario.setEmail(dto.getEmail());
-	        usuario.setTelefono(dto.getTelefono());
+            Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
-	        Set<Rol> roles = dto.getRolesIds().stream()
-		            .map(rolServices::buscarPorId)
-		            .filter(Objects::nonNull)
-		            .collect(Collectors.toSet());
+            // Contraseña inicial = username (se recomienda forzar cambio al primer login)
+            ContrasenaDto contrasena = new ContrasenaDto();
+            contrasena.setIdUsuario(usuarioGuardado.getIdUsuario());
+            contrasena.setContrasena(usuarioGuardado.getNombreUsuario());
+            contrasenaServices.crearContrasena(contrasena);
 
-	        usuario.setRoles(roles);
+            // Foto (opcional)
+            if (dto.getFotoUsuario() != null) {
+                fotoUsuarioServices.guardarFoto(usuarioGuardado.getIdUsuario(), dto.getFotoUsuario());
+            }
 
-	        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+            UsuarioDto dtoFinal = mapperUsuarioDto(usuarioGuardado);
+            lista.add(dtoFinal);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario guardado correctamente");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
 
-	        if (dto.getFotoUsuario() != null) {
-	        	fotoUsuarioServices.actualizarFoto(idUsuario, dto.getFotoUsuario());
-	        }
+        } catch (Exception e) {
+            logger.error("Error al guardar usuario", e);
+            response.setMetdata("nOk", "-1", "No se pudo guardar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-	        UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-	        lista.add(dtoFinal);
-	        response.getUsuarioResponse().setUsuario(lista);
-	        response.setMetdata("OK", "1", "Usuario actualizado correctamente");
-	        return new ResponseEntity<>(response, HttpStatus.OK);
+    /**
+      Busca un usuario ACTIVO por su identificador y devuelve DTO con foto si existe.
+     
+      @param idUsuario id del usuario
+      @return 200 con usuario si existe; 404 si no encontrado; 500 ante error interno
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<UsuarioResponseRest> buscarPorId(Long idUsuario) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+        try {
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByIdActivo(idUsuario);
 
-	    } catch (Exception e) {
-	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("nOk", "-1", "No se pudo actualizar el usuario");
-	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
-	}
-	
-	@Override
-	public ResponseEntity<UsuarioResponseRest> eliminadoLogicoUsuario(Long idUsuario) {
-		  UsuarioResponseRest response = new UsuarioResponseRest();
-		    List<UsuarioDto> lista = new ArrayList<>();
+            if (usuarioOpt.isEmpty()) {
+                response.setMetdata("nOk", "-1", "Usuario no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
 
-		    try {
-		        Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
+            Usuario usuario = usuarioOpt.get();
+            UsuarioDto dto = mapperUsuarioDto(usuario);
 
-		        if (!usuarioOptional.isPresent()) {
-		            response.setMetdata("nOk", "-1", "Usuario no encontrado");
-		            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-		        }
+            FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
+            if (foto != null) {
+                dto.setFotoUsuario(foto.getFoto());
+            }
 
-		        Usuario usuario = usuarioOptional.get();
-		        usuario.setEstado(false);
+            lista.add(dto);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario encontrado");
 
+            return ResponseEntity.ok(response);
 
-		        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+        } catch (Exception e) {
+            logger.error("Error al buscar usuario por Id {}", idUsuario, e);
+            response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 
-		        UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-		        lista.add(dtoFinal);
-		        response.getUsuarioResponse().setUsuario(lista);
-		        response.setMetdata("OK", "1", "Usuario Eliminado Logicamente correctamente");
-		        return new ResponseEntity<>(response, HttpStatus.OK);
+    /**
+      Busca un usuario ACTIVO por su {@code username} y devuelve DTO con foto si existe.
+     
+      @param username nombre de usuario (case-insensitive en query nativa)
+      @return 200 si existe, 404 si no, 500 en error interno
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<UsuarioResponseRest> buscarPorUserNameActivo(String username) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+        try {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findUsername(username);
+            if (usuarioOptional.isEmpty()) {
+                response.setMetdata("nOk", "-1", "Usuario No encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
 
-		    } catch (Exception e) {
-		        logger.error("Error al actualizar usuario", e);
-		        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
-		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-		    }
-	}
+            Usuario usuario = usuarioOptional.get();
+            UsuarioDto dto = mapperUsuarioDto(usuario);
 
-	@Override
-	public ResponseEntity<UsuarioResponseRest> eliminarUsuarioLogicoPorUserName(String userName) {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		
-		try {
-			Optional<Usuario> usuarioExist = usuarioRepository.findUsername(userName);
-			if(usuarioExist.isEmpty()) {
-				response.setMetdata("nOk ", "-1", " Usuario no encontrado");
-				return new ResponseEntity<UsuarioResponseRest>(response,HttpStatus.NOT_FOUND);
-			}
-			
-			Usuario usuario = usuarioExist.get();
-			usuario.setEstado(false);
-			
-			Usuario usuarioActualizado = usuarioRepository.save(usuario);
-			
-			UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-	        lista.add(dtoFinal);
-	        response.getUsuarioResponse().setUsuario(lista);
-	        response.setMetdata("OK", "1", "Usuario Eliminado Logicamente correctamente");
-	        return new ResponseEntity<>(response, HttpStatus.OK);
+            FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
+            if (foto != null) {
+                dto.setFotoUsuario(foto.getFoto());
+            }
 
-	    } catch (Exception e) {
-	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
-	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
-	}
-	
-	@Override
-	public ResponseEntity<UsuarioResponseRest> eliminadiFisicoUsuario(Long idUsuario) {
-		  UsuarioResponseRest response = new UsuarioResponseRest();
-		    List<UsuarioDto> lista = new ArrayList<>();
+            lista.add(dto);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("Ok", "1", "Usuario encontrado");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error al buscar usuario por username {}", username, e);
+            response.setMetdata("nOk", "-1", "Error interno al buscar el usuario");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 
-		    try {
-		        Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
+    /**
+      Lista todos los usuarios ACTIVOS y adjunta la foto si existe.
+     
+      @return 200 con lista; 500 en error interno
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<UsuarioResponseRest> buscarTodosActivos() {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
 
-		        if (!usuarioOptional.isPresent()) {
-		            response.setMetdata("nOk", "-1", "Usuario no encontrado");
-		            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-		        }
+        try {
+            List<Usuario> usuarios = usuarioRepository.findAllActivos();
 
-		        Usuario usuario = usuarioOptional.get();
+            for (Usuario usuario : usuarios) {
+                UsuarioDto dto = mapperUsuarioDto(usuario);
+                FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
+                if (foto != null) {
+                    dto.setFotoUsuario(foto.getFoto());
+                }
+                lista.add(dto);
+            }
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("Ok", "1", "Usuarios Encontrados");
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
-		        usuarioRepository.deleteById(usuario.getIdUsuario());
+        } catch (Exception e) {
+            logger.error("Error al buscar a todos los usuarios", e);
+            response.setMetdata(" nOk", "-1", "Error al buscar los usuarios");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-//		        UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-//		        lista.add(dtoFinal);
-		        response.getUsuarioResponse().setUsuario(lista);
-		        response.setMetdata("OK", "1", "Usuario Eliminado Permanente correctamente");
-		        return new ResponseEntity<>(response, HttpStatus.OK);
+    /**
+      Lista todos los usuarios INACTIVOS y adjunta la foto si existe.
+     
+      @return 200 con lista; 500 en error interno
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<UsuarioResponseRest> buscarTodosInactivos() {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
 
-		    } catch (Exception e) {
-		        logger.error("Error al actualizar usuario", e);
-		        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
-		        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-		    }
-	}
+        try {
+            List<Usuario> usuarios = usuarioRepository.findAllInactivos();
 
-	@Override
-	public ResponseEntity<UsuarioResponseRest> eliminarUsuarioFisicoPorUserName(String userName) {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		
-		try {
-			Optional<Usuario> usuarioExist = usuarioRepository.findUsername(userName);
-			if(usuarioExist.isEmpty()) {
-				response.setMetdata("nOk ", "-1", " Usuario no encontrado");
-				return new ResponseEntity<UsuarioResponseRest>(response,HttpStatus.NOT_FOUND);
-			}
-			
-	        Usuario usuario = usuarioExist.get();
+            for (Usuario usuario : usuarios) {
+                UsuarioDto dto = mapperUsuarioDto(usuario);
+                FotoUsuario foto = fotoUsuarioServices.obtenerFotoPorUsuarioId(usuario.getIdUsuario());
+                if (foto != null) {
+                    dto.setFotoUsuario(foto.getFoto());
+                }
+                lista.add(dto);
+            }
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("Ok", "1", "Usuarios Encontrados");
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
-	        usuarioRepository.deleteById(usuario.getIdUsuario());
-			
-//			UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-//	        lista.add(dtoFinal);
-	        response.getUsuarioResponse().setUsuario(lista);
-	        response.setMetdata("OK", "1", "Usuario Eliminado Logicamente correctamente");
-	        return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("Error al buscar a todos los usuarios inactivos", e);
+            response.setMetdata("nOk", "-1", "Error al buscar los usuarios");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-	    } catch (Exception e) {
-	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
-	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
-	}
+    /**
+      Actualiza datos básicos (email, teléfono) y roles del usuario activo.
+      Si se envían bytes de foto, actualiza la imagen de perfil.
+     
+      @param idUsuario id del usuario a actualizar
+      @param dto datos a aplicar
+      @return 200 si correcto; 404 si no existe; 500 ante error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> actualizarUsuario(Long idUsuario, UsuarioDto dto) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
 
-	@Override
-	public ResponseEntity<UsuarioResponseRest> reactivarUsuariosPorUsername(String username) {
-		UsuarioResponseRest response = new UsuarioResponseRest();
-		List<UsuarioDto> lista = new ArrayList<>();
-		
-		try {
-			Optional<Usuario> usuarioExist = usuarioRepository.findUsernameByInactivo(username);
-			if(usuarioExist.isEmpty()) {
-				response.setMetdata("nOk ", "-1", " Usuario no encontrado");
-				return new ResponseEntity<UsuarioResponseRest>(response,HttpStatus.NOT_FOUND);
-			}
-			
-			Usuario usuario = usuarioExist.get();
-			usuario.setEstado(true);
-			
-			Usuario usuarioActualizado = usuarioRepository.save(usuario);
-			
-			UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
-	        lista.add(dtoFinal);
-	        response.getUsuarioResponse().setUsuario(lista);
-	        response.setMetdata("OK", "1", "Usuario Eliminado Logicamente correctamente");
-	        return new ResponseEntity<>(response, HttpStatus.OK);
+        try {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findByIdActivo(idUsuario);
 
-	    } catch (Exception e) {
-	        logger.error("Error al actualizar usuario", e);
-	        response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
-	        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
-	}
-	
+            if (!usuarioOptional.isPresent()) {
+                response.setMetdata("nOk", "-1", "Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioOptional.get();
+            usuario.setEmail(dto.getEmail());
+            usuario.setTelefono(dto.getTelefono());
+
+            Set<Rol> roles = dto.getRolesIds().stream()
+                    .map(rolServices::buscarPorId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            usuario.setRoles(roles);
+
+            Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+            if (dto.getFotoUsuario() != null) {
+                fotoUsuarioServices.actualizarFoto(idUsuario, dto.getFotoUsuario());
+            }
+
+            UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
+            lista.add(dtoFinal);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario actualizado correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al actualizar usuario", e);
+            response.setMetdata("nOk", "-1", "No se pudo actualizar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+      Elimina lógicamente (estado = FALSE) a un usuario por ID.
+     
+      @param idUsuario id del usuario
+      @return 200 si correcto; 404 si no existe; 500 en error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> eliminadoLogicoUsuario(Long idUsuario) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+
+        try {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
+
+            if (!usuarioOptional.isPresent()) {
+                response.setMetdata("nOk", "-1", "Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioOptional.get();
+            usuario.setEstado(false);
+
+            Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+            UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
+            lista.add(dtoFinal);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario Eliminado Lógicamente correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al eliminar lógicamente usuario", e);
+            response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+      Elimina lógicamente (estado = FALSE) a un usuario por {@code username}.
+     
+      @param userName nombre de usuario
+      @return 200 si correcto; 404 si no existe; 500 en error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> eliminarUsuarioLogicoPorUserName(String userName) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+
+        try {
+            Optional<Usuario> usuarioExist = usuarioRepository.findUsername(userName);
+            if (usuarioExist.isEmpty()) {
+                response.setMetdata("nOk ", "-1", " Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioExist.get();
+            usuario.setEstado(false);
+
+            Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+            UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
+            lista.add(dtoFinal);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario Eliminado Lógicamente correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al eliminar lógicamente por username", e);
+            response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+      Elimina físicamente (DELETE) a un usuario por ID.
+     
+      @param idUsuario id del usuario
+      @return 200 si correcto; 404 si no existe; 500 en error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> eliminadiFisicoUsuario(Long idUsuario) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+
+        try {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findById(idUsuario);
+
+            if (!usuarioOptional.isPresent()) {
+                response.setMetdata("nOk", "-1", "Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioOptional.get();
+            usuarioRepository.deleteById(usuario.getIdUsuario());
+
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario Eliminado Permanentemente correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al eliminar físicamente usuario", e);
+            response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+      Elimina físicamente (DELETE) a un usuario por {@code username}.
+     
+      @param userName nombre de usuario
+      @return 200 si correcto; 404 si no existe; 500 en error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> eliminarUsuarioFisicoPorUserName(String userName) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+
+        try {
+            Optional<Usuario> usuarioExist = usuarioRepository.findUsername(userName);
+            if (usuarioExist.isEmpty()) {
+                response.setMetdata("nOk ", "-1", " Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioExist.get();
+            usuarioRepository.deleteById(usuario.getIdUsuario());
+
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario Eliminado Permanentemente correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al eliminar físicamente por username", e);
+            response.setMetdata("nOk", "-1", "No se pudo Eliminar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+      Reactiva un usuario (estado = TRUE) por {@code username}.
+     
+      @param username nombre de usuario inactivo
+      @return 200 si reactivado; 404 si no existe; 500 en error
+     */
+    @Override
+    @Transactional
+    public ResponseEntity<UsuarioResponseRest> reactivarUsuariosPorUsername(String username) {
+        UsuarioResponseRest response = new UsuarioResponseRest();
+        List<UsuarioDto> lista = new ArrayList<>();
+
+        try {
+            Optional<Usuario> usuarioExist = usuarioRepository.findUsernameByInactivo(username);
+            if (usuarioExist.isEmpty()) {
+                response.setMetdata("nOk ", "-1", " Usuario no encontrado");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            Usuario usuario = usuarioExist.get();
+            usuario.setEstado(true);
+
+            Usuario usuarioActualizado = usuarioRepository.save(usuario);
+
+            UsuarioDto dtoFinal = mapperUsuarioDto(usuarioActualizado);
+            lista.add(dtoFinal);
+            response.getUsuarioResponse().setUsuario(lista);
+            response.setMetdata("OK", "1", "Usuario reactivado correctamente");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error al reactivar usuario por username", e);
+            response.setMetdata("nOk", "-1", "No se pudo reactivar el usuario");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -28,6 +28,35 @@ import com.proyect.System_userAndLogin.Services.IContrasenaServices;
 import com.proyect.System_userAndLogin.Services.IPreguntaSeguridadServices;
 import com.proyect.System_userAndLogin.Util.Util;
 
+/**
+  Implementación del servicio para gestión de contraseñas de usuarios.
+ 
+  Responsabilidades:
+  
+    Crear la contraseña inicial de un usuario (hasheada).
+    Actualizar contraseña verificando la actual.
+    Crear/actualizar pregunta de seguridad y actualizar contraseña en un mismo flujo.
+    Recuperar/establecer nueva contraseña validando por email y respuesta de seguridad.
+    Validar una contraseña en claro contra el hash persistido.
+  
+ 
+  Seguridad: Todas las contraseñas se manejan como hash usando utilidades de
+  cifrado/validación (p. ej. {@code Util.encriptarTexto} y {@code Util.verificarTexto}). No se debe
+  loggear el valor de las contraseñas ni los hashes.
+ 
+  Transaccionalidad: La clase está anotada con {@code @Transactional}; los métodos
+  heredan este comportamiento salvo que se indique explícitamente lo contrario con {@code readOnly=true}.
+ 
+  Respuestas:Se utilizan envoltorios tipo {@code ContrasenaResponseRest} con
+  metadatos estándar (type, code, date/mensaje).
+ 
+  Errores:La implementación captura excepciones y devuelve códigos/metadatos
+  adecuados; se recomienda no exponer detalles internos en mensajes al cliente.
+ 
+  @author Emmanuel
+  @version 1.5
+  @since 2025-10
+ */
 
 @Service
 @Transactional 
@@ -39,7 +68,14 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
     private final IUsuarioRepocitory usuarioRepository;
     private final IPreguntaSeguridadServices preguntaSeguridadServices;
 
-    // Usa constructor público para inyección (o Lombok @RequiredArgsConstructor)
+
+    /**
+      Crea una instancia del servicio de contraseñas con sus dependencias.
+     
+      @param contrasenaRepository repositorio de contraseñas (hash)
+      @param usuarioRepository repositorio de usuarios
+      @param preguntaSeguridadServices servicio para gestión de preguntas de seguridad
+     */
     public ContrasenaServicesImpl(IContrasenaReposiroty contrasenaRepository,
                                   IUsuarioRepocitory usuarioRepository,
                                   IPreguntaSeguridadServices preguntaSeguridadServices) {
@@ -48,6 +84,19 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
         this.preguntaSeguridadServices = preguntaSeguridadServices;
     }
 
+    /**
+      Crea una contraseña para el usuario indicado, siempre en formato hash.
+     
+      Validaciones:
+      
+        El usuario debe existir.
+        El usuario no debe tener ya una contraseña registrada.
+      
+     
+      @param creaContrasena DTO con idUsuario y contraseña en claro (se hashea internamente)
+      @return {@link ResponseEntity} con {@code 201 CREATED} si se creó, {@code 404 NOT_FOUND} si el usuario no existe,
+              {@code 409 CONFLICT} si ya tenía contraseña, o {@code 500 INTERNAL_SERVER_ERROR} en error inesperado
+     */
     @Override
     @Transactional
     public ResponseEntity<ContrasenaResponseRest> crearContrasena(ContrasenaDto creaContrasena) {
@@ -91,6 +140,20 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
         }
     }
 
+    /**
+      Actualiza la contraseña de un usuario validando la contraseña actual.
+     
+      Flujo:
+      
+        Valida existencia de usuario y de contraseña actual.
+        Verifica la contraseña actual contra el hash.
+        Hashea y guarda la nueva contraseña.
+      
+     
+      @param idUsuario id del usuario
+      @param actContra DTO con {@code contrasenaActual} y {@code contrasenaNueva} en claro
+      @return {@code ContrasenaResponseRest} con metadatos de éxito o error (no usa HTTP wrapper aquí)
+     */
     @Override
     @Transactional
     public ContrasenaResponseRest actualizarContrasena(Long idUsuario, ActualizarContrasenaDto actContra
@@ -140,6 +203,21 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
         }
     }
 
+    /**
+      Crea o actualiza la pregunta de seguridad y, en el mismo flujo,
+      actualiza la contraseña del usuario.
+     
+     Notas:
+      
+        Si el usuario no tiene contraseña previa, solo se crea la pregunta y se retorna metadato adecuado.
+        La nueva contraseña siempre se persiste como hash.
+      
+     
+      @param idUsuario id del usuario
+      @param dto DTO con pregunta y respuesta en claro (la respuesta se hashea internamente)
+      @param nuevaContrasena nueva contraseña en claro (se hashea internamente)
+      @return {@code ContrasenaResponseRest} con metadatos del resultado del proceso
+     */
     @Override
     @Transactional
     public ContrasenaResponseRest crearPreguntaYActualizarContrasena(Long idUsuario,
@@ -187,6 +265,21 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
         }
     }
 
+    /**
+      Recupera/establece una nueva contraseña validando por email y respuesta de seguridad.
+     
+      Flujo:
+      
+        Busca el usuario por email.
+        Valida la respuesta de seguridad vía servicio correspondiente.
+        Si no hay contraseña previa, la crea; si existe, la actualiza.
+      
+     
+      @param email correo del usuario
+      @param respuesta respuesta a la pregunta de seguridad en claro
+      @param nuevaContrasena nueva contraseña en claro (se hashea internamente)
+      @return {@code ContrasenaResponseRest} con metadatos de éxito o error
+     */
     @Override
     @Transactional
     public ContrasenaResponseRest recuperarContrasena(String email, String respuesta, String nuevaContrasena) {
@@ -250,6 +343,14 @@ public class ContrasenaServicesImpl implements IContrasenaServices {
         }
     }
 
+    /**
+      Valida una contraseña en claro contra el hash almacenado para un usuario.
+     
+      @param idUsuario id del usuario
+      @param contrasena contraseña en claro a verificar
+      @return {@code ContrasenaResponseRest} con metadatos:
+              "OK" si válida, "NO OK" si no corresponde o no existe registro
+     */
     @Override
     @Transactional(readOnly = true)
     public ContrasenaResponseRest validarContrasena(Long idUsuario, String contrasena) {
