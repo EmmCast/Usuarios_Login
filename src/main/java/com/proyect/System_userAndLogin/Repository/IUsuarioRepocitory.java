@@ -110,4 +110,16 @@ public interface IUsuarioRepocitory extends JpaRepository<Usuario, Long> {
     @Query(value = "SELECT * FROM usuarios u WHERE u.email =:email AND u.estado = TRUE",
            nativeQuery = true)
     Optional<Usuario> findByEmailIgnoreCase(String email);
+    
+    
+    /**
+     query para buscar un usuario ya sea por su username o correo que esten activos 
+     * @param login
+     * @return
+     */
+    @Query(value = "SELECT * FROM usuarios u WHERE  u.nombre_usuario =:login AND u.estado = TRUE " +
+    		" OR u.email =:login AND u.estado = TRUE ",
+            nativeQuery = true)
+     Optional<Usuario> findByLogin(@Param("login")String login);
+    
 }
