@@ -39,12 +39,15 @@ import lombok.RequiredArgsConstructor;
   @since 2025-10
  */
 @Service
-@RequiredArgsConstructor
 public class userNameServicesImpl {
 
     /** Repositorio de usuarios para verificar existencia y listar prefijos existentes. */
     private final IUsuarioRepocitory usuarioRepository;
 
+    public userNameServicesImpl(IUsuarioRepocitory usuarioRepository) {
+    	this.usuarioRepository = usuarioRepository;
+    }
+    
     /** Longitud máxima permitida para el username final. */
     private static final int MAX_LEN = 30;
 
